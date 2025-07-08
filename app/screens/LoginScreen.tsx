@@ -1,22 +1,43 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput } from 'react-native';
+import { useEmailAuth } from "@/hooks/useEmailAuth";
+import React, { useState } from "react";
+import {
+  Alert,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import SocialButton from "../../components/SocialButton";
 
 export default function LoginScreen() {
-  const [usuario, setUsuario] = useState('');
-  const [contrasena, setContrasena] = useState('');
+  const [usuario, setUsuario] = useState("");
+  const [contrasena, setContrasena] = useState("");
 
-  const handleLogin = () => {
-    // Aquí puedes agregar la lógica de autenticación
-    console.log('Usuario:', usuario);
-    console.log('Contraseña:', contrasena);
-  };
+  const { login } = useEmailAuth();
+
+const handleLogin = async () => {
+  if (!usuario || !contrasena) {
+    Alert.alert("Campos vacíos", "Por favor ingresa usuario y contraseña.");
+    return;
+  }
+
+  const result = await login(usuario, contrasena);
+
+  if (result.error) {
+    Alert.alert("Error", result.error);
+  } else {
+    Alert.alert("Bienvenido", `Sesión iniciada como ${result.user?.email}`);
+    // Aquí puedes navegar a otra pantalla o guardar el estado global
+  }
+};
 
   return (
     <View style={styles.container}>
-
       {/* Imagen del gatito (puedes cambiar la ruta y la imagen) */}
       <Image
-        source={require('./logo-pixly.png')} // Cambia esto por la ruta correcta de tu imagen
+        source={require("./logo-pixly.png")} // Cambia esto por la ruta correcta de tu imagen
         style={styles.logo}
         resizeMode="contain"
       />
@@ -52,14 +73,20 @@ export default function LoginScreen() {
       </View>
 
       {/* Botones de autenticación */}
-      <TouchableOpacity style={styles.authButton}>
-        <Text style={styles.authText}><Text style={{ fontWeight: 'bold' }}>G</Text> Google</Text>
-      </TouchableOpacity>
+      <SocialButton
+        text="Iniciar con Google"
+        backgroundColor="#fff"
+        textColor="#000"
+        iconLetter="G"
+        onPress={() => console.log("Google auth aquí")}
+      />
 
-      <TouchableOpacity style={styles.authButton}>
-        <Text style={styles.authText}><Text style={{ fontWeight: 'bold' }}>f</Text> Facebook</Text>
-      </TouchableOpacity>
-
+      <SocialButton
+        text="Iniciar con Facebook"
+        backgroundColor="#3b5998"
+        iconLetter="f"
+        onPress={() => console.log("Facebook auth aquí")}
+      />
     </View>
   );
 }
@@ -67,9 +94,9 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#007AFF',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#007AFF",
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 40,
   },
   logo: {
@@ -78,54 +105,54 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   input: {
-    backgroundColor: '#ddd',
-    width: '100%',
+    backgroundColor: "#ddd",
+    width: "100%",
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderRadius: 25,
     marginBottom: 15,
     fontSize: 16,
-    color: '#000',
+    color: "#000",
   },
   loginButton: {
-    backgroundColor: '#005BBB',
-    width: '100%',
+    backgroundColor: "#005BBB",
+    width: "100%",
     paddingVertical: 15,
     borderRadius: 25,
     marginBottom: 15,
-    alignItems: 'center',
+    alignItems: "center",
   },
   loginButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   separatorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
     marginVertical: 20,
   },
   separatorLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#ccc',
+    backgroundColor: "#ccc",
   },
   separatorText: {
     marginHorizontal: 10,
-    color: '#fff',
-    fontWeight: 'bold',
+    color: "#fff",
+    fontWeight: "bold",
   },
   authButton: {
-    backgroundColor: '#ddd',
-    width: '100%',
+    backgroundColor: "#ddd",
+    width: "100%",
     paddingVertical: 15,
     borderRadius: 25,
     marginBottom: 15,
-    alignItems: 'center',
+    alignItems: "center",
   },
   authText: {
     fontSize: 16,
-    color: '#000',
+    color: "#000",
   },
 });
