@@ -1,53 +1,55 @@
-import { useEmailAuth } from "@/hooks/useEmailAuth";
+import { useRegister } from "@/hooks/useRegisterAuth";
 import React, { useState } from "react";
 import {
-  Alert,
-  Image,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import SocialButton from "../../components/SocialButton";
 
-type LoginScreenProps = {
-  navigation: any; // mejor tipar con NavigationProp si quieres
+type RegisterScreenProps = {
+  navigation: any; // puedes tipar mejor si quieres
 };
 
-export default function LoginScreen({ navigation }: LoginScreenProps) {
+export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   const [usuario, setUsuario] = useState("");
   const [contrasena, setContrasena] = useState("");
 
-  const { login } = useEmailAuth();
+  const { register } = useRegister();
 
-  const handleLogin = async () => {
+  const handleRegister = async () => {
     if (!usuario || !contrasena) {
       Alert.alert("Campos vacíos", "Por favor ingresa usuario y contraseña.");
       return;
     }
 
-    const result = await login(usuario, contrasena);
+    const result = await register(usuario, contrasena);
 
     if (result.error) {
       Alert.alert("Error", result.error);
     } else {
-      Alert.alert("Bienvenido", `Sesión iniciada como ${result.user?.email}`);
-      // Aquí puedes navegar a otra pantalla o guardar el estado global
+      Alert.alert("Registro exitoso", `Bienvenido ${result.user?.email}`);
+      // Aquí luego puedes navegar o limpiar campos si quieres
     }
   };
 
   return (
     <View style={styles.container}>
+      {/* Logo */}
       <Image
         source={require("./logo-pixly.png")}
         style={styles.logo}
         resizeMode="contain"
       />
 
+      {/* Inputs */}
       <TextInput
         style={styles.input}
-        placeholder="Usuario"
+        placeholder="Correo electrónico"
         placeholderTextColor="#555"
         value={usuario}
         onChangeText={setUsuario}
@@ -62,36 +64,39 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
         secureTextEntry
       />
 
-      <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-        <Text style={styles.loginButtonText}>Iniciar sesión</Text>
+      {/* Botón de Registrar */}
+      <TouchableOpacity style={styles.loginButton} onPress={handleRegister}>
+        <Text style={styles.loginButtonText}>Registrarme</Text>
       </TouchableOpacity>
 
-      {/* Botón para ir a Registro */}
-      <TouchableOpacity onPress={() => navigation.navigate("Register")}>
+      {/* Botón para volver a Login */}
+      <TouchableOpacity onPress={() => navigation.navigate("Login")}>
         <Text style={styles.navigateText}>
-          ¿No tienes cuenta? Regístrate aquí
+          ¿Ya tienes cuenta? Inicia sesión aquí
         </Text>
       </TouchableOpacity>
 
+      {/* Separador con "o" */}
       <View style={styles.separatorContainer}>
         <View style={styles.separatorLine} />
         <Text style={styles.separatorText}>o</Text>
         <View style={styles.separatorLine} />
       </View>
 
+      {/* Botones de autenticación social (aún no funcionales) */}
       <SocialButton
-        text="Iniciar con Google"
+        text="Registrarse con Google"
         backgroundColor="#fff"
         textColor="#000"
         iconLetter="G"
-        onPress={() => console.log("Google auth aquí")}
+        onPress={() => console.log("Registro con Google (pendiente)")}
       />
 
       <SocialButton
-        text="Iniciar con Facebook"
+        text="Registrarse con Facebook"
         backgroundColor="#3b5998"
         iconLetter="f"
-        onPress={() => console.log("Facebook auth aquí")}
+        onPress={() => console.log("Registro con Facebook (pendiente)")}
       />
     </View>
   );

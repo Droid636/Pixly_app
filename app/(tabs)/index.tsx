@@ -1,13 +1,15 @@
-import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
+import React from 'react';
+import LoginScreen from '../screens/LoginScreen';
+import RegisterScreen from '../screens/RegisterScreen';
 import SplashScreen from '../screens/SplashScreen';
 import StartScreen from '../screens/StartScreen';
-import LoginScreen from '../screens/LoginScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
   Start: undefined;
   Login: undefined;
+  Register : undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -18,6 +20,7 @@ export default function TabsNavigator() {
       <Stack.Screen name="Splash" component={SplashScreen} />
       <Stack.Screen name="Start" component={StartScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen}/>
     </Stack.Navigator>
   );
 }

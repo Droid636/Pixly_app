@@ -1,4 +1,3 @@
-// hooks/useEmailAuth.ts
 import { auth } from "@/scripts/firebase";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 
