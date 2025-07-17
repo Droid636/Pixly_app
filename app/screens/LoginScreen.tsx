@@ -12,7 +12,7 @@ import {
 import SocialButton from "../../components/SocialButton";
 
 type LoginScreenProps = {
-  navigation: any; // mejor tipar con NavigationProp si quieres
+  navigation: any; // mejor tipar con NavigationProp 
 };
 
 export default function LoginScreen({ navigation }: LoginScreenProps) {

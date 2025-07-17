@@ -45,7 +45,9 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
         style={styles.logo}
         resizeMode="contain"
       />
-
+       <Text style={styles.title}>
+          Registro
+        </Text>
       {/* Inputs */}
       <TextInput
         style={styles.input}
@@ -110,10 +112,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 40,
   },
+  title: {
+    color: "#fff",
+    fontSize: 40,
+    fontWeight: "bold",
+    marginBottom: 30,
+  },
   logo: {
     width: 150,
     height: 150,
-    marginBottom: 40,
+    marginBottom: 3,
   },
   input: {
     backgroundColor: "#ddd",
