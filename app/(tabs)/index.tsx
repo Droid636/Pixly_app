@@ -4,12 +4,14 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import SplashScreen from '../screens/SplashScreen';
 import StartScreen from '../screens/StartScreen';
+import Niveles from '../screens/Niveles';
 
 export type RootStackParamList = {
   Splash: undefined;
   Start: undefined;
   Login: undefined;
   Register : undefined;
+  Niveles : undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -21,6 +23,7 @@ export default function TabsNavigator() {
       <Stack.Screen name="Start" component={StartScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen}/>
+      <Stack.Screen name="Niveles" component={Niveles}/>
     </Stack.Navigator>
   );
 }
