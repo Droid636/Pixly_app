@@ -9,10 +9,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import SocialButton from "../../components/SocialButton";
 
 type LoginScreenProps = {
-  navigation: any; 
+  navigation: any;
 };
 
 export default function LoginScreen({ navigation }: LoginScreenProps) {
@@ -45,6 +44,8 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
         resizeMode="contain"
       />
 
+      <Text style={styles.title}>Bienvenido</Text>
+
       <TextInput
         style={styles.input}
         placeholder="Usuario"
@@ -72,27 +73,6 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           ¿No tienes cuenta? Regístrate aquí
         </Text>
       </TouchableOpacity>
-
-      <View style={styles.separatorContainer}>
-        <View style={styles.separatorLine} />
-        <Text style={styles.separatorText}>o</Text>
-        <View style={styles.separatorLine} />
-      </View>
-
-      <SocialButton
-        text="Iniciar con Google"
-        backgroundColor="#fff"
-        textColor="#000"
-        iconLetter="G"
-        onPress={() => console.log("Google auth aquí")}
-      />
-
-      <SocialButton
-        text="Iniciar con Facebook"
-        backgroundColor="#3b5998"
-        iconLetter="f"
-        onPress={() => console.log("Facebook auth aquí")}
-      />
     </View>
   );
 }
@@ -104,6 +84,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 40,
+  },
+  title: {
+    color: "#fff",
+    fontSize: 40,
+    fontWeight: "bold",
+    marginBottom: 30,
   },
   logo: {
     width: 150,

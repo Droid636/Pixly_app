@@ -1,15 +1,14 @@
 import { useRegister } from "@/hooks/useRegisterAuth";
 import React, { useState } from "react";
 import {
-    Alert,
-    Image,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import SocialButton from "../../components/SocialButton";
 
 type RegisterScreenProps = {
   navigation: any; // puedes tipar mejor si quieres
@@ -77,29 +76,6 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
           ¿Ya tienes cuenta? Inicia sesión aquí
         </Text>
       </TouchableOpacity>
-
-      {/* Separador con "o" */}
-      <View style={styles.separatorContainer}>
-        <View style={styles.separatorLine} />
-        <Text style={styles.separatorText}>o</Text>
-        <View style={styles.separatorLine} />
-      </View>
-
-      {/* Botones de autenticación social (aún no funcionales) */}
-      <SocialButton
-        text="Registrarse con Google"
-        backgroundColor="#fff"
-        textColor="#000"
-        iconLetter="G"
-        onPress={() => console.log("Registro con Google (pendiente)")}
-      />
-
-      <SocialButton
-        text="Registrarse con Facebook"
-        backgroundColor="#3b5998"
-        iconLetter="f"
-        onPress={() => console.log("Registro con Facebook (pendiente)")}
-      />
     </View>
   );
 }
