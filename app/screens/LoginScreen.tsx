@@ -31,8 +31,16 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     if (result.error) {
       Alert.alert("Error", result.error);
     } else {
-      Alert.alert("Bienvenido", `Sesión iniciada como ${result.user?.email}`);
-      // Aquí puedes navegar a otra pantalla o guardar el estado global
+      Alert.alert(
+        "Bienvenido",
+        `Sesión iniciada como ${result.user?.email}`,
+        [
+          {
+            text: "OK",
+            onPress: () => navigation.navigate("Niveles"),
+          },
+        ]
+      );
     }
   };
 
