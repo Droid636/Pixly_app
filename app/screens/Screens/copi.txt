@@ -1,0 +1,56 @@
+¿Cuál etiqueta se usa para crear un enlace (link)?
+A) <link>
+B) <a>
+C) <href>
+D) <url>
+
+¿Qué etiqueta se utiliza para insertar una imagen?
+A) <pic>
+B) <image>
+C) <src>
+D) <img>
+
+¿Cuál de estas etiquetas se usa para crear una lista ordenada?
+A) <ul>
+B) <ol>
+C) <li>
+D) <dl>
+
+¿Qué atributo se usa para especificar la URL de una imagen en HTML?
+A) link
+B) src
+C) href
+D) alt
+
+¿Qué etiqueta crea una celda en una tabla?
+A) <td>
+B) <tr>
+C) <th>
+D) <table>
+✅ Respuesta correcta:  ¿Cuál de las siguientes etiquetas se usa para poner texto en negrita?
+A) <i>
+B) <strong>
+C) <u>
+D) <mark>
+✅ Respuesta correcta: B
+
+9. ¿Qué elemento se usa para definir un encabezado de nivel 1?
+A) <head>
+B) <heading>
+C) <h1>
+D) <title>
+✅ Respuesta correcta: C
+
+10. ¿Cuál etiqueta se usa para crear un formulario?
+A) <form>
+B) <input>
+C) <button>
+D) <action>
+✅ Respuesta correcta: A
+¿Qué atributo se usa para dar un enlace en una etiqueta <a>?
+A) href
+B) src
+C) link
+D) url
+✅ Respuesta correcta: A
+
