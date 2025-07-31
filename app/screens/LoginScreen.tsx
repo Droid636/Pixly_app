@@ -1,14 +1,15 @@
 import { useEmailAuth } from "@/hooks/useEmailAuth";
 import React, { useState } from "react";
 import {
-  Alert,
   Image,
+  Modal,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import * as Animatable from "react-native-animatable";
 
 type LoginScreenProps = {
   navigation: any;
@@ -18,29 +19,40 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   const [usuario, setUsuario] = useState("");
   const [contrasena, setContrasena] = useState("");
 
+  // Estados para modal de alerta
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertType, setAlertType] = useState<"error" | "success" | "warning">("warning");
+
+  // Estado para modal éxito
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+
   const { login } = useEmailAuth();
+
+  const showAlert = (message: string, type: "error" | "success" | "warning") => {
+    setAlertMessage(message);
+    setAlertType(type);
+    setAlertVisible(true);
+  };
 
   const handleLogin = async () => {
     if (!usuario || !contrasena) {
-      Alert.alert("Campos vacíos", "Por favor ingresa usuario y contraseña.");
+      showAlert("Por favor ingresa usuario y contraseña.", "warning");
       return;
     }
 
     const result = await login(usuario, contrasena);
 
     if (result.error) {
-      Alert.alert("Error", result.error);
+      showAlert(result.error, "error");
     } else {
-      Alert.alert(
-        "Bienvenido",
-        `Sesión iniciada como ${result.user?.email}`,
-        [
-          {
-            text: "OK",
-            onPress: () => navigation.navigate("Niveles"),
-          },
-        ]
-      );
+      setUserEmail(result.user?.email || "");
+      setSuccessModalVisible(true);
+      setTimeout(() => {
+        setSuccessModalVisible(false);
+        navigation.navigate("Niveles");
+      }, 2000); // Modal visible 2 segundos
     }
   };
 
@@ -75,12 +87,50 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
         <Text style={styles.loginButtonText}>Iniciar sesión</Text>
       </TouchableOpacity>
 
-      {/* Botón para ir a Registro */}
       <TouchableOpacity onPress={() => navigation.navigate("Register")}>
         <Text style={styles.navigateText}>
           ¿No tienes cuenta? Regístrate aquí
         </Text>
       </TouchableOpacity>
+
+      {/* Modal para alertas (error, warning) */}
+      <Modal visible={alertVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <Animatable.View
+            animation="fadeInDown"
+            duration={600}
+            style={[
+              styles.alertBox,
+              alertType === "error" && styles.alertError,
+              alertType === "warning" && styles.alertWarning,
+              alertType === "success" && styles.alertSuccess,
+            ]}
+          >
+            <Text style={styles.alertMessage}>{alertMessage}</Text>
+            <TouchableOpacity
+              onPress={() => setAlertVisible(false)}
+              style={styles.alertButton}
+            >
+              <Text style={styles.alertButtonText}>Cerrar</Text>
+            </TouchableOpacity>
+          </Animatable.View>
+        </View>
+      </Modal>
+
+      {/* Modal para éxito */}
+      <Modal visible={successModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <Animatable.View
+            animation="bounceIn"
+            duration={800}
+            style={styles.successModalContent}
+          >
+            <Text style={styles.successIcon}>✅</Text>
+            <Text style={styles.successText}>¡Inicio exitoso!</Text>
+            <Text style={styles.successSubText}>Bienvenido {userEmail}</Text>
+          </Animatable.View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -133,20 +183,73 @@ const styles = StyleSheet.create({
     textAlign: "center",
     textDecorationLine: "underline",
   },
-  separatorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    width: "100%",
-    marginVertical: 20,
-  },
-  separatorLine: {
+
+  /* Alert Modal styles */
+  modalOverlay: {
     flex: 1,
-    height: 1,
-    backgroundColor: "#ccc",
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  separatorText: {
-    marginHorizontal: 10,
+  alertBox: {
+    backgroundColor: "#fff",
+    padding: 25,
+    borderRadius: 15,
+    width: "80%",
+    alignItems: "center",
+    elevation: 10,
+  },
+  alertMessage: {
+    fontSize: 18,
+    marginBottom: 20,
+    textAlign: "center",
+    color: "#333",
+  },
+  alertButton: {
+    backgroundColor: "#007AFF",
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    borderRadius: 20,
+  },
+  alertButtonText: {
     color: "#fff",
     fontWeight: "bold",
+    fontSize: 16,
+  },
+  alertError: {
+    borderWidth: 2,
+    borderColor: "#FF4C4C",
+  },
+  alertWarning: {
+    borderWidth: 2,
+    borderColor: "#FFB800",
+  },
+  alertSuccess: {
+    borderWidth: 2,
+    borderColor: "#28A745",
+  },
+
+  /* Success modal styles */
+  successModalContent: {
+    backgroundColor: "#fff",
+    padding: 30,
+    borderRadius: 20,
+    alignItems: "center",
+    elevation: 10,
+    width: "80%",
+  },
+  successIcon: {
+    fontSize: 50,
+    marginBottom: 15,
+  },
+  successText: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#28A745",
+  },
+  successSubText: {
+    marginTop: 10,
+    fontSize: 18,
+    color: "#333",
   },
 });
