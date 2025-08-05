@@ -11,6 +11,9 @@ import {
 } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 
+import { useLogout } from '@/hooks/useLogout'; // Importa tu hook de logout
+import { useNavigation } from '@react-navigation/native'; // Importa navegación
+
 const { width } = Dimensions.get('window');
 
 const SECCIONES_POR_NIVEL = 5;
@@ -18,6 +21,9 @@ const VIDAS_INICIALES = 5;
 const TIEMPO_ESPERA = 60;
 
 export default function Niveles() {
+  const navigation = useNavigation<any>();  // Para navegación
+  const logout = useLogout();                // Hook para cerrar sesión
+
   const [vidas, setVidas] = useState(VIDAS_INICIALES);
   const [timer, setTimer] = useState(0);
   const [bloqueado, setBloqueado] = useState(false);
@@ -95,11 +101,18 @@ export default function Niveles() {
     return Math.round((completadas / SECCIONES_POR_NIVEL) * 100);
   };
 
-  // Nuevo: confirmar cerrar sesión con modal propio
-  const handleCerrarSesionConfirmado = () => {
+  // Función para confirmar cierre de sesión
+  const handleCerrarSesionConfirmado = async () => {
     setModalCerrarSesionVisible(false);
-    // Aquí tu lógica para cerrar sesión real
-    console.log('Sesión cerrada');
+    const result = await logout();
+    if (result.success) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    } else {
+      alert(`Error al cerrar sesión: ${result.error}`);
+    }
   };
 
   return (
@@ -220,7 +233,6 @@ export default function Niveles() {
           </View>
         </View>
       </Modal>
-
     </View>
   );
 }
