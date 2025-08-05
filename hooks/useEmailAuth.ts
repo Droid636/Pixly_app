@@ -9,7 +9,7 @@ export const useEmailAuth = () => {
       return { user: userCredential.user };
     } catch (error: any) {
       console.error("❌ Error al iniciar sesión:", error.message);
-      return { error: error.message };
+      return { error: "Datos incorrectos, verifica de nuevo" };
     }
   };
 
