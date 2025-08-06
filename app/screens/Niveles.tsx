@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { WebView } from 'react-native-webview';
 import {
   ActivityIndicator,
   Dimensions,
@@ -21,6 +22,8 @@ const { width } = Dimensions.get('window');
 const SECCIONES_POR_NIVEL = 5;
 const VIDAS_INICIALES = 5;
 const TIEMPO_ESPERA = 60;
+
+const API_BASE_URL = 'http://192.168.0.101:5000';  // tu IP real y puerto
 
 type Question = {
   _id: string;
@@ -45,9 +48,12 @@ export default function Niveles() {
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [selectedAnswers, setSelectedAnswers] = useState<{ [key: string]: string }>({});
 
+  const [videoVisto, setVideoVisto] = useState(false);
+
+
   const [niveles, setNiveles] = useState(() =>
     [
-      { id: 1, name: 'HTML', color: '#FF00FF', description: 'Estructura HTML básica' },
+      { id: 1, name: 'HTML5', color: '#FF00FF', description: 'Estructura HTML básica' },
       { id: 2, name: 'CSS', color: '#FFFFFF', description: 'Estilos y diseño' },
       { id: 3, name: 'JavaScript', color: '#FFA500', description: 'Lógica de programación' },
       { id: 4, name: 'React', color: '#00FF00', description: 'Componentes y hooks' },
@@ -85,7 +91,7 @@ export default function Niveles() {
     setLoadingQuestions(true);
     try {
       // Cambia la URL para que sea tu API real, filtrando por nivel y sección si lo tienes
-      const response = await fetch(`http://localhost:5000/api/questions/${getNivelKey(nivelId)}?level=${seccionId}&limit=5`);
+      const response = await fetch(`${API_BASE_URL}/api/questions/${getNivelKey(nivelId)}?level=${seccionId}&limit=5`);
       const json = await response.json();
       if (json.success && json.data && Array.isArray(json.data)) {
         setQuestions(json.data);
@@ -104,7 +110,7 @@ export default function Niveles() {
     setLoadingQuestions(true);
     try {
       // API que trae preguntas combinadas para desafío final
-      const response = await fetch(`http://localhost:5000/api/questions/desafio-final?limit=10`);
+      const response = await fetch(`${API_BASE_URL}/api/questions/desafio-final?limit=10`);
       const json = await response.json();
       if (json.success && json.data && Array.isArray(json.data)) {
         setQuestions(json.data);
@@ -140,7 +146,7 @@ export default function Niveles() {
 
   const getNivelKey = (nivelId: number) => {
     switch (nivelId) {
-      case 1: return 'html';
+      case 1: return 'html5';
       case 2: return 'css';
       case 3: return 'javascript';
       case 4: return 'react';
@@ -197,6 +203,7 @@ export default function Niveles() {
 
   const handleSeccion = (nivelIndex: number, seccionIndex: number) => {
     // Abrir modal preguntas para cualquier sección
+    setVideoVisto(false);
     openPreguntasModal(nivelIndex, seccionIndex);
   };
 
@@ -241,6 +248,8 @@ export default function Niveles() {
       )}
     </View>
   );
+
+const nivelActual = nivelAbiertoIndex !== null ? getNivelKey(niveles[nivelAbiertoIndex].id) : null;
 
   return (
     <View style={styles.container}>
@@ -326,7 +335,7 @@ export default function Niveles() {
         visible={modalPreguntasVisible}
         animationType="slide"
         onRequestClose={() => setModalPreguntasVisible(false)}
-      >
+        >
         <View style={styles.modalContent}>
           <TouchableOpacity
             style={styles.modalCloseBtn}
@@ -339,18 +348,86 @@ export default function Niveles() {
             {currentSeccionIndex === SECCIONES_POR_NIVEL - 1 ? 'Desafío Final' : `Preguntas ${niveles[currentNivelIndex ?? 0]?.name} Sección ${currentSeccionIndex !== null ? currentSeccionIndex + 1 : ''}`}
           </Text>
 
-          {loadingQuestions ? (
-            <ActivityIndicator size="large" color="#1572b6" />
-          ) : questions.length === 0 ? (
-            <Text style={styles.noQuestionsText}>No hay preguntas disponibles.</Text>
-          ) : (
-            <FlatList
-              data={questions}
-              keyExtractor={(item) => item._id}
-              renderItem={renderQuestion}
-              extraData={selectedAnswers}
-            />
-          )}
+          {
+            nivelActual && currentSeccionIndex === 0 && !videoVisto ? (
+              nivelActual === 'html5' ? (
+                <>
+                  <Text style={styles.videoTitle}>🎥 Introducción a HTML5</Text>
+                  <View style={styles.videoContainer}>
+                    <WebView
+                      source={{ uri: 'https://youtu.be/UfRt3lQM9_Q?si=sFyDSsW6teKoagr0' }}
+                      style={styles.webview}
+                    />
+                  </View>
+                  <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => setVideoVisto(true)}
+                  >
+                    <Text style={styles.buttonText}>Iniciar preguntas</Text>
+                  </TouchableOpacity>
+                </>
+              ) : nivelActual === 'css' ? (
+                <>
+                  <Text style={styles.videoTitle}>🎥 Introducción a CSS</Text>
+                  <View style={styles.videoContainer}>
+                    <WebView
+                      source={{ uri: 'https://youtu.be/1PnVor36_40' }}
+                      style={styles.webview}
+                    />
+                  </View>
+                  <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => setVideoVisto(true)}
+                  >
+                    <Text style={styles.buttonText}>Iniciar preguntas</Text>
+                  </TouchableOpacity>
+                </>
+              ) : nivelActual === 'javascript' ? (
+                <>
+                  <Text style={styles.videoTitle}>🎥 Introducción a JavaScript</Text>
+                  <View style={styles.videoContainer}>
+                    <WebView
+                      source={{ uri: 'https://youtu.be/hdI2bqOjy3c' }}
+                      style={styles.webview}
+                    />
+                  </View>
+                  <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => setVideoVisto(true)}
+                  >
+                    <Text style={styles.buttonText}>Iniciar preguntas</Text>
+                  </TouchableOpacity>
+                </>
+              ) : nivelActual === 'react' ? (
+                <>
+                  <Text style={styles.videoTitle}>🎥 Introducción a React</Text>
+                  <View style={styles.videoContainer}>
+                    <WebView
+                      source={{ uri: 'https://youtu.be/bMknfKXIFA8' }}
+                      style={styles.webview}
+                    />
+                  </View>
+                  <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => setVideoVisto(true)}
+                  >
+                    <Text style={styles.buttonText}>Iniciar preguntas</Text>
+                  </TouchableOpacity>
+                </>
+              ) : null
+            ) : loadingQuestions ? (
+              <ActivityIndicator size="large" color="#1572b6" />
+            ) : questions.length === 0 ? (
+              <Text style={styles.noQuestionsText}>No hay preguntas disponibles.</Text>
+            ) : (
+              <FlatList
+                data={questions}
+                keyExtractor={(item) => item._id}
+                renderItem={renderQuestion}
+                extraData={selectedAnswers}
+              />
+            )
+          }
 
           <TouchableOpacity
             style={styles.closeButton}
@@ -585,12 +662,16 @@ const styles = StyleSheet.create({
 
   modalOverlay: {
     flex: 1,
+
     backgroundColor: 'rgba(0,0,0,0.85)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   modalContent: {
+    justifyContent: 'center', // Centra verticalmente
+     alignItems: 'center',     // Centra horizontalmente
+    flex:1,
     backgroundColor: '#FFF',
     borderRadius: 24,
     width: '90%',
@@ -730,4 +811,32 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 16,
   },
+
+  videoTitle: {
+  fontSize: 20,
+  fontWeight: 'bold',
+  marginBottom: 10,
+  textAlign: 'center',
+  color: '#0083ff',
+},
+videoContainer: {
+  width: '100%',
+  height: 220,
+  marginBottom: 20,
+},
+webview: {
+  flex: 1,
+},
+button: {
+  backgroundColor: '#0083ff',
+  padding: 10,
+  borderRadius: 10,
+  marginBottom: 20,
+},
+buttonText: {
+  color: 'white',
+  textAlign: 'center',
+  fontWeight: 'bold',
+},
+
 });

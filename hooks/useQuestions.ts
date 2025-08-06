@@ -6,7 +6,7 @@ export function useQuestions() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/questions')
+    fetch('http://192.168.0.101:5000/api/questions')
       .then(res => res.json())
       .then(data => {
         setQuestions(data.data); // Accede a la propiedad 'data' de la respuesta
