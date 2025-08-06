@@ -1,18 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Dimensions,
+  FlatList,
   Modal,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 
-import { useLogout } from '@/hooks/useLogout'; // Importa tu hook de logout
-import { useNavigation } from '@react-navigation/native'; // Importa navegación
+import { useLogout } from '@/hooks/useLogout';
+import { useNavigation } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 
@@ -20,15 +22,28 @@ const SECCIONES_POR_NIVEL = 5;
 const VIDAS_INICIALES = 5;
 const TIEMPO_ESPERA = 60;
 
+type Question = {
+  _id: string;
+  question: string;
+  options: string[];
+  answer: string;
+  explanation?: string;
+};
+
 export default function Niveles() {
-  const navigation = useNavigation<any>();  // Para navegación
-  const logout = useLogout();                // Hook para cerrar sesión
+  const navigation = useNavigation<any>();
+  const logout = useLogout();
 
   const [vidas, setVidas] = useState(VIDAS_INICIALES);
   const [timer, setTimer] = useState(0);
   const [bloqueado, setBloqueado] = useState(false);
-  const [nivelAbierto, setNivelAbierto] = useState<number | null>(null);
+  const [nivelAbiertoIndex, setNivelAbiertoIndex] = useState<number | null>(null);
   const [modalCerrarSesionVisible, setModalCerrarSesionVisible] = useState(false);
+
+  const [modalPreguntasVisible, setModalPreguntasVisible] = useState(false);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
+  const [selectedAnswers, setSelectedAnswers] = useState<{ [key: string]: string }>({});
 
   const [niveles, setNiveles] = useState(() =>
     [
@@ -36,13 +51,13 @@ export default function Niveles() {
       { id: 2, name: 'CSS', color: '#FFFFFF', description: 'Estilos y diseño' },
       { id: 3, name: 'JavaScript', color: '#FFA500', description: 'Lógica de programación' },
       { id: 4, name: 'React', color: '#00FF00', description: 'Componentes y hooks' },
-    ].map((nivel, i) => ({
+    ].map((nivel) => ({
       ...nivel,
       secciones: Array(SECCIONES_POR_NIVEL).fill(null).map((_, j) => ({
         id: j + 1,
         titulo: j < 4 ? `Sección ${j + 1}` : 'Desafío Final',
         completado: false,
-        bloqueado: i > 0 || j > 0,
+        bloqueado: false,
       }))
     }))
   );
@@ -65,26 +80,107 @@ export default function Niveles() {
     return () => clearInterval(intervalo);
   }, [bloqueado, timer]);
 
-  const handleSeccion = (nivelIndex: number, seccionIndex: number) => {
-    const nivel = niveles[nivelIndex];
-    const seccion = nivel.secciones[seccionIndex];
-
-    if (seccion.bloqueado || seccion.completado || bloqueado) return;
-
-    const exito = Math.random() > 0.3;
-
-    if (exito) {
-      const nuevos = [...niveles];
-      nuevos[nivelIndex].secciones[seccionIndex].completado = true;
-
-      if (seccionIndex + 1 < SECCIONES_POR_NIVEL) {
-        nuevos[nivelIndex].secciones[seccionIndex + 1].bloqueado = false;
-      } else if (nivelIndex + 1 < niveles.length) {
-        nuevos[nivelIndex + 1].secciones[0].bloqueado = false;
+  // Función para cargar preguntas para secciones normales (no desafío final)
+  const fetchQuestions = async (nivelId: number, seccionId: number) => {
+    setLoadingQuestions(true);
+    try {
+      // Cambia la URL para que sea tu API real, filtrando por nivel y sección si lo tienes
+      const response = await fetch(`http://localhost:5000/api/questions/${getNivelKey(nivelId)}?level=${seccionId}&limit=5`);
+      const json = await response.json();
+      if (json.success && json.data && Array.isArray(json.data)) {
+        setQuestions(json.data);
+      } else {
+        setQuestions([]);
       }
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+      setQuestions([]);
+    }
+    setLoadingQuestions(false);
+  };
 
-      setNiveles(nuevos);
-      alert('✅ ¡Correcto! ' + seccion.titulo + ' completada');
+  // Función para cargar preguntas para desafío final (de todos los niveles)
+  const fetchDesafioFinalQuestions = async () => {
+    setLoadingQuestions(true);
+    try {
+      // API que trae preguntas combinadas para desafío final
+      const response = await fetch(`http://localhost:5000/api/questions/desafio-final?limit=10`);
+      const json = await response.json();
+      if (json.success && json.data && Array.isArray(json.data)) {
+        setQuestions(json.data);
+      } else {
+        setQuestions([]);
+      }
+    } catch (error) {
+      console.error('Error fetching desafío final questions:', error);
+      setQuestions([]);
+    }
+    setLoadingQuestions(false);
+  };
+
+  const [currentNivelIndex, setCurrentNivelIndex] = useState<number | null>(null);
+  const [currentSeccionIndex, setCurrentSeccionIndex] = useState<number | null>(null);
+
+  const openPreguntasModal = async (nivelIndex: number, seccionIndex: number) => {
+    setSelectedAnswers({});
+    setCurrentNivelIndex(nivelIndex);
+    setCurrentSeccionIndex(seccionIndex);
+
+    const esDesafioFinal = seccionIndex === SECCIONES_POR_NIVEL - 1;
+    if (esDesafioFinal) {
+      await fetchDesafioFinalQuestions();
+    } else {
+      const nivelId = niveles[nivelIndex].id;
+      const seccionId = seccionIndex + 1;
+      await fetchQuestions(nivelId, seccionId);
+    }
+
+    setModalPreguntasVisible(true);
+  };
+
+  const getNivelKey = (nivelId: number) => {
+    switch (nivelId) {
+      case 1: return 'html';
+      case 2: return 'css';
+      case 3: return 'javascript';
+      case 4: return 'react';
+      default: return 'javascript';
+    }
+  };
+
+  const selectOption = (questionId: string, option: string) => {
+    setSelectedAnswers((prev) => ({ ...prev, [questionId]: option }));
+  };
+
+  const closePreguntasModal = () => {
+    if (questions.length === 0) {
+      setModalPreguntasVisible(false);
+      return;
+    }
+    // Comprobar si todas las respuestas son correctas
+    let todasCorrectas = true;
+    questions.forEach(q => {
+      if (selectedAnswers[q._id] !== q.answer) {
+        todasCorrectas = false;
+      }
+    });
+
+    if (todasCorrectas) {
+      alert('✅ ¡Correcto! Sección completada');
+      if (currentNivelIndex !== null && currentSeccionIndex !== null) {
+        const nuevos = [...niveles];
+        nuevos[currentNivelIndex].secciones[currentSeccionIndex].completado = true;
+
+        // Si no es desafío final, desbloquear la siguiente sección
+        if (currentSeccionIndex + 1 < SECCIONES_POR_NIVEL) {
+          nuevos[currentNivelIndex].secciones[currentSeccionIndex + 1].bloqueado = false;
+        } else if (currentNivelIndex + 1 < niveles.length) {
+          // desbloquear primer sección del siguiente nivel
+          nuevos[currentNivelIndex + 1].secciones[0].bloqueado = false;
+        }
+
+        setNiveles(nuevos);
+      }
     } else {
       const nuevasVidas = vidas - 1;
       setVidas(nuevasVidas);
@@ -94,6 +190,14 @@ export default function Niveles() {
       }
       alert('❌ Fallaste. Has perdido una vida.');
     }
+
+    setModalPreguntasVisible(false);
+    setSelectedAnswers({});
+  };
+
+  const handleSeccion = (nivelIndex: number, seccionIndex: number) => {
+    // Abrir modal preguntas para cualquier sección
+    openPreguntasModal(nivelIndex, seccionIndex);
   };
 
   const getProgreso = (nivel: typeof niveles[number]) => {
@@ -101,7 +205,6 @@ export default function Niveles() {
     return Math.round((completadas / SECCIONES_POR_NIVEL) * 100);
   };
 
-  // Función para confirmar cierre de sesión
   const handleCerrarSesionConfirmado = async () => {
     setModalCerrarSesionVisible(false);
     const result = await logout();
@@ -114,6 +217,30 @@ export default function Niveles() {
       alert(`Error al cerrar sesión: ${result.error}`);
     }
   };
+
+  const renderQuestion = ({ item }: { item: Question }) => (
+    <View style={styles.questionContainer}>
+      <Text style={styles.questionText}>{item.question}</Text>
+      {item.options.map((opt) => {
+        const selected = selectedAnswers[item._id] === opt;
+        return (
+          <TouchableOpacity
+            key={opt}
+            style={[styles.optionButton, selected && styles.optionSelected]}
+            onPress={() => selectOption(item._id, opt)}
+          >
+            <Text style={[styles.optionText, selected && styles.optionTextSelected]}>{opt}</Text>
+          </TouchableOpacity>
+        );
+      })}
+      {selectedAnswers[item._id] === item.answer && (
+        <Text style={styles.correctAnswer}>¡Correcto! {item.explanation ?? ''}</Text>
+      )}
+      {selectedAnswers[item._id] && selectedAnswers[item._id] !== item.answer && (
+        <Text style={styles.wrongAnswer}>Respuesta incorrecta. Intenta otra opción.</Text>
+      )}
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -141,7 +268,7 @@ export default function Niveles() {
             key={nivel.id}
             style={styles.levelItem}
             activeOpacity={0.8}
-            onPress={() => setNivelAbierto(nivel.id)}
+            onPress={() => setNivelAbiertoIndex(idx)}
           >
             <View style={styles.progressBox}>
               <ProgressCircle
@@ -158,48 +285,79 @@ export default function Niveles() {
         )}
       </ScrollView>
 
-      {/* Modal niveles */}
       <Modal
-        visible={nivelAbierto !== null}
+        visible={nivelAbiertoIndex !== null}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setNivelAbierto(null)}
+        onRequestClose={() => setNivelAbiertoIndex(null)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <TouchableOpacity
               style={styles.modalCloseBtn}
-              onPress={() => setNivelAbierto(null)}
+              onPress={() => setNivelAbiertoIndex(null)}
             >
               <Text style={styles.modalCloseText}>✕</Text>
             </TouchableOpacity>
 
             <Text style={styles.modalTitle}>
-              {niveles.find(n => n.id === nivelAbierto)?.name}
+              {nivelAbiertoIndex !== null ? niveles[nivelAbiertoIndex].name : ''}
             </Text>
 
             <ScrollView>
-              {nivelAbierto !== null && niveles.find(n => n.id === nivelAbierto)?.secciones.map((sec, i) => (
+              {nivelAbiertoIndex !== null && niveles[nivelAbiertoIndex].secciones.map((sec, i) => (
                 <TouchableOpacity
                   key={sec.id}
-                  style={[
-                    styles.seccionBtn,
-                    sec.completado && styles.seccionCompletada,
-                    sec.bloqueado && styles.seccionBloqueada
-                  ]}
-                  disabled={sec.bloqueado || sec.completado || bloqueado}
-                  onPress={() => {
-                    const nivelIndex = niveles.findIndex(n => n.id === nivelAbierto);
-                    handleSeccion(nivelIndex, i);
-                  }}
+                  style={[styles.seccionBtn, sec.bloqueado && styles.seccionBloqueada]}
+                  onPress={() => handleSeccion(nivelAbiertoIndex, i)}
                 >
                   <Text style={styles.seccionTexto}>
-                    {sec.completado ? '✅' : sec.bloqueado ? '🔒' : '➡️'} {sec.titulo}
+                    {sec.completado ? '✅ ' : ''}{sec.titulo}
                   </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
           </View>
+        </View>
+      </Modal>
+
+      {/* Modal preguntas */}
+      <Modal
+        visible={modalPreguntasVisible}
+        animationType="slide"
+        onRequestClose={() => setModalPreguntasVisible(false)}
+      >
+        <View style={styles.modalContent}>
+          <TouchableOpacity
+            style={styles.modalCloseBtn}
+            onPress={closePreguntasModal}
+          >
+            <Text style={styles.modalCloseText}>✕</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.modalTitle}>
+            {currentSeccionIndex === SECCIONES_POR_NIVEL - 1 ? 'Desafío Final' : `Preguntas ${niveles[currentNivelIndex ?? 0]?.name} Sección ${currentSeccionIndex !== null ? currentSeccionIndex + 1 : ''}`}
+          </Text>
+
+          {loadingQuestions ? (
+            <ActivityIndicator size="large" color="#1572b6" />
+          ) : questions.length === 0 ? (
+            <Text style={styles.noQuestionsText}>No hay preguntas disponibles.</Text>
+          ) : (
+            <FlatList
+              data={questions}
+              keyExtractor={(item) => item._id}
+              renderItem={renderQuestion}
+              extraData={selectedAnswers}
+            />
+          )}
+
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={closePreguntasModal}
+          >
+            <Text style={styles.closeButtonText}>Enviar respuestas</Text>
+          </TouchableOpacity>
         </View>
       </Modal>
 
@@ -237,7 +395,7 @@ export default function Niveles() {
   );
 }
 
-const ProgressCircle = ({ percentage, color, label }: { percentage: number, color: string, label: string }) => {
+const ProgressCircle = ({ percentage, color, label }: { percentage: number; color: string; label: string }) => {
   const size = 110;
   const radius = size / 2 - 18;
   const circumference = 2 * Math.PI * radius;
@@ -270,17 +428,19 @@ const ProgressCircle = ({ percentage, color, label }: { percentage: number, colo
   );
 };
 
+// -- Aquí agregas tus estilos --
+
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
+  container: {
+    flex: 1,
     backgroundColor: '#0057D9',
   },
-  statusBar: { 
-    height: Platform.OS === 'web' ? 0 : 44, 
+  statusBar: {
+    height: Platform.OS === 'web' ? 0 : 44,
     backgroundColor: '#1E90FF',
   },
-  header: { 
-    alignItems: 'center', 
+  header: {
+    alignItems: 'center',
     paddingTop: 12,
     paddingBottom: 24,
     backgroundColor: '#1E90FF',
@@ -298,20 +458,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  heartContainer: { 
+  heartContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  heart: { 
+  heart: {
     fontSize: 36,
     marginRight: 8,
     textShadowColor: 'rgba(0, 0, 0, 0.25)',
     textShadowOffset: { width: 0, height: 3 },
     textShadowRadius: 6,
   },
-  levelNumber: { 
+  levelNumber: {
     fontSize: 22,
-    fontWeight: '900', 
+    fontWeight: '900',
     color: '#FFF',
     letterSpacing: 1,
   },
@@ -334,8 +494,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
 
-  scrollContent: { 
-    paddingBottom: 40, 
+  scrollContent: {
+    paddingBottom: 40,
     paddingHorizontal: 20,
     alignItems: 'center',
   },
@@ -358,21 +518,24 @@ const styles = StyleSheet.create({
   },
   percentageText: {
     position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    justifyContent: 'center', 
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  percentageNumber: { 
-    fontSize: 22, 
-    fontWeight: '900', 
-    color: '#222', 
+  percentageNumber: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#222',
     marginBottom: 4,
     fontFamily: 'System',
   },
-  levelName: { 
-    fontSize: 14, 
-    fontWeight: '700', 
-    color: '#222', 
+  levelName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#222',
     textAlign: 'center',
     letterSpacing: 0.8,
   },
@@ -458,7 +621,62 @@ const styles = StyleSheet.create({
     color: '#222',
   },
 
-  /* Estilos para modal confirmar cerrar sesión */
+  noQuestionsText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 30,
+  },
+  questionContainer: {
+    marginBottom: 25,
+    borderBottomWidth: 1,
+    borderColor: '#ddd',
+    paddingBottom: 15,
+  },
+  questionText: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  optionButton: {
+    padding: 10,
+    backgroundColor: '#eee',
+    borderRadius: 8,
+    marginVertical: 5,
+  },
+  optionSelected: {
+    backgroundColor: '#1572b6',
+  },
+  optionText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  optionTextSelected: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  correctAnswer: {
+    marginTop: 8,
+    color: 'green',
+    fontWeight: 'bold',
+  },
+  wrongAnswer: {
+    marginTop: 8,
+    color: 'red',
+    fontWeight: 'bold',
+  },
+  closeButton: {
+    backgroundColor: '#1572b6',
+    padding: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+
   confirmModalContent: {
     backgroundColor: '#fff',
     borderRadius: 24,
