@@ -325,41 +325,47 @@ export default function Niveles() {
       <Modal
         visible={modalPreguntasVisible}
         animationType="slide"
+        transparent={true}  // <-- importante para fondo transparente
         onRequestClose={() => setModalPreguntasVisible(false)}
       >
-        <View style={styles.modalContent}>
-          <TouchableOpacity
-            style={styles.modalCloseBtn}
-            onPress={closePreguntasModal}
-          >
-            <Text style={styles.modalCloseText}>✕</Text>
-          </TouchableOpacity>
+        <View style={styles.modalOverlay}>  {/* Fondo oscuro y centrado */}
+          <View style={styles.modalContent}> {/* Contenido blanco centrado */}
+            <TouchableOpacity
+              style={styles.modalCloseBtn}
+              onPress={closePreguntasModal}
+            >
+              <Text style={styles.modalCloseText}>✕</Text>
+            </TouchableOpacity>
 
-          <Text style={styles.modalTitle}>
-            {currentSeccionIndex === SECCIONES_POR_NIVEL - 1 ? 'Desafío Final' : `Preguntas ${niveles[currentNivelIndex ?? 0]?.name} Sección ${currentSeccionIndex !== null ? currentSeccionIndex + 1 : ''}`}
-          </Text>
+            <Text style={styles.modalTitle}>
+              {currentSeccionIndex === SECCIONES_POR_NIVEL - 1
+                ? 'Desafío Final'
+                : `Preguntas ${niveles[currentNivelIndex ?? 0]?.name} Sección ${currentSeccionIndex !== null ? currentSeccionIndex + 1 : ''}`}
+            </Text>w
 
-          {loadingQuestions ? (
-            <ActivityIndicator size="large" color="#1572b6" />
-          ) : questions.length === 0 ? (
-            <Text style={styles.noQuestionsText}>No hay preguntas disponibles.</Text>
-          ) : (
-            <FlatList
-              data={questions}
-              keyExtractor={(item) => item._id}
-              renderItem={renderQuestion}
-              extraData={selectedAnswers}
-            />
-          )}
+            {loadingQuestions ? (
+              <ActivityIndicator size="large" color="#1572b6" />
+            ) : questions.length === 0 ? (
+              <Text style={styles.noQuestionsText}>No hay preguntas disponibles.</Text>
+            ) : (
+              <FlatList
+                data={questions}
+                keyExtractor={(item) => item._id}
+                renderItem={renderQuestion}
+                extraData={selectedAnswers}
+              />
+            )}
 
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={closePreguntasModal}
-          >
-            <Text style={styles.closeButtonText}>Enviar respuestas</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={closePreguntasModal}
+            >
+              <Text style={styles.closeButtonText}>Enviar respuestas</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
+
 
       {/* Modal confirmar cerrar sesión */}
       <Modal
@@ -585,9 +591,9 @@ const styles = StyleSheet.create({
 
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.85)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',  // Fondo oscuro semitransparente
+    justifyContent: 'center',             // Centrado vertical
+    alignItems: 'center',                 // Centrado horizontal
     padding: 20,
   },
   modalContent: {
@@ -602,6 +608,7 @@ const styles = StyleSheet.create({
     shadowRadius: 15,
     elevation: 15,
   },
+
   modalCloseBtn: {
     position: 'absolute',
     top: 16,
