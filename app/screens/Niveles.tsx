@@ -198,20 +198,29 @@ export default function Niveles() {
 
   const [modalIntroduccionVisible, setModalIntroduccionVisible] = useState(false);
 const [introduccion, setIntroduccion] = useState('');
+const [codeExample, setCodeExample] = useState(''); // Nuevo estado para el código
 const [loadingIntro, setLoadingIntro] = useState(false);
 const fetchIntroduccion = async (nivelId: number) => {
-  setLoadingIntro(true);
-  setIntroduccion('');
-  try {
-    let key = getNivelKey(nivelId).toLowerCase();
-    const response = await fetch(`http://localhost:5000/api/introductions/${key}`);
-    const json = await response.json();
-    setIntroduccion(json.data.description || 'No hay introducción disponible.');
-  } catch (e) {
-    setIntroduccion('Error al cargar la introducción.');
-  }
-  setLoadingIntro(false);
-};
+    setLoadingIntro(true);
+    setIntroduccion('');
+    setCodeExample(''); // Reiniciar el código
+    try {
+      let key = getNivelKey(nivelId).toLowerCase();
+      const response = await fetch(`http://localhost:5000/api/introductions/${key}`);
+      const json = await response.json();
+      if (json.data) {
+        setIntroduccion(json.data.description || 'No hay introducción disponible.');
+        setCodeExample(json.data.codeExample || 'No hay ejemplo de código disponible.'); // Asignar el código
+      } else {
+        setIntroduccion('No hay introducción disponible.');
+        setCodeExample('No hay ejemplo de código disponible.');
+      }
+    } catch (e) {
+      setIntroduccion('Error al cargar la introducción.');
+      setCodeExample('Error al cargar el ejemplo de código.');
+    }
+    setLoadingIntro(false);
+  };
 
   const handleSeccion = async (nivelIndex: number, seccionIndex: number) => {
   setCurrentNivelIndex(nivelIndex);
@@ -348,38 +357,55 @@ const continuarAPreguntas = async () => {
         </View>
       </Modal>
 
+{/* Modal de Introducción (mejorado con código dinámico) */}
       <Modal
-      visible={modalIntroduccionVisible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={() => setModalIntroduccionVisible(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <TouchableOpacity
-            style={styles.modalCloseBtn}
-            onPress={() => setModalIntroduccionVisible(false)}
-          >
-            <Text style={styles.modalCloseText}>✕</Text>
-          </TouchableOpacity>
-          <Text style={styles.modalTitle}>Introducción</Text>
-          {loadingIntro ? (
-            <ActivityIndicator size="large" color="#1572b6" />
-          ) : (
-            <ScrollView style={{ maxHeight: 250 }}>
-              <Text style={{ fontSize: 16, color: '#222', marginBottom: 20 }}>{introduccion}</Text>
-            </ScrollView>
-          )}
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={continuarAPreguntas}
-            disabled={loadingIntro}
-          >
-            <Text style={styles.closeButtonText}>Continuar</Text>
-          </TouchableOpacity>
+        visible={modalIntroduccionVisible}
+        animationType="fade" // Un fade es más suave para intro
+        transparent={true}
+        onRequestClose={() => setModalIntroduccionVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.introModalContent}>
+            <TouchableOpacity
+              style={styles.modalCloseBtn}
+              onPress={() => setModalIntroduccionVisible(false)}
+            >
+              <Text style={styles.modalCloseText}>✕</Text>
+            </TouchableOpacity>
+
+            <View style={styles.introIconContainer}>
+              <Text style={styles.introIcon}>💡</Text>
+            </View>
+
+            <Text style={styles.introTitle}>
+              ¡Prepárate para la sección!
+            </Text>
+
+            {loadingIntro ? (
+              <ActivityIndicator size="large" color="#1572b6" style={styles.introLoading} />
+            ) : (
+              <ScrollView style={styles.introScroll}>
+                <Text style={styles.introText}>{introduccion}</Text>
+                {/* Nuevo: Cuadro con ejemplo de código dinámico */}
+                <View style={styles.codeExampleContainer}>
+                  <Text style={styles.codeExampleTitle}>Ejemplo de Código:</Text>
+                  <Text style={styles.codeExampleText}>
+                    {codeExample || "Cargando ejemplo de código..."}
+                  </Text>
+                </View>
+              </ScrollView>
+            )}
+
+            <TouchableOpacity
+              style={styles.introContinueButton}
+              onPress={continuarAPreguntas}
+              disabled={loadingIntro}
+            >
+              <Text style={styles.introContinueButtonText}>Continuar</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
 
       {/* Modal preguntas */}
       <Modal
@@ -528,6 +554,102 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+// --- Estilos para el nuevo modal de introducción (mejorado) ---
+  introModalContent: {
+    backgroundColor: '#F0F8FF', // Fondo más claro para destacar
+    borderRadius: 24,
+    width: '95%', // Aumentado el ancho
+    maxHeight: '90%', // Aumentada la altura
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#1E90FF',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.4,
+    shadowRadius: 15,
+    elevation: 15,
+  },
+  introIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#1E90FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 6,
+  },
+  introIcon: {
+    fontSize: 48,
+    color: '#fff',
+  },
+  introTitle: {
+    fontSize: 24,
+    fontWeight: '900',
+    textAlign: 'center',
+    color: '#1572b6',
+    marginBottom: 12,
+  },
+  introScroll: {
+    maxHeight: 250,
+  },
+  introText: {
+    fontSize: 16,
+    color: '#222',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  introLoading: {
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  introContinueButton: {
+    backgroundColor: '#1E90FF',
+    padding: 16,
+    borderRadius: 12,
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 24,
+    shadowColor: '#1E90FF',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  introContinueButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+  // --- Nuevos estilos para el cuadro de código ---
+  codeExampleContainer: {
+    backgroundColor: '#2d2d2d',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 20,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  codeExampleTitle: {
+    color: '#ccc',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  codeExampleText: {
+    color: '#f8f8f2',
+    fontSize: 12,
+    fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
+    lineHeight: 18,
+  },
+  // --- Fin de nuevos estilos ---,
   heart: {
     fontSize: 36,
     marginRight: 8,
