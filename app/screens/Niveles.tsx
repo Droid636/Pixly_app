@@ -10,6 +10,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Button
 } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 
@@ -195,10 +196,36 @@ export default function Niveles() {
     setSelectedAnswers({});
   };
 
-  const handleSeccion = (nivelIndex: number, seccionIndex: number) => {
-    // Abrir modal preguntas para cualquier sección
-    openPreguntasModal(nivelIndex, seccionIndex);
-  };
+  const [modalIntroduccionVisible, setModalIntroduccionVisible] = useState(false);
+const [introduccion, setIntroduccion] = useState('');
+const [loadingIntro, setLoadingIntro] = useState(false);
+const fetchIntroduccion = async (nivelId: number) => {
+  setLoadingIntro(true);
+  setIntroduccion('');
+  try {
+    let key = getNivelKey(nivelId).toLowerCase();
+    const response = await fetch(`http://localhost:5000/api/introductions/${key}`);
+    const json = await response.json();
+    setIntroduccion(json.data.description || 'No hay introducción disponible.');
+  } catch (e) {
+    setIntroduccion('Error al cargar la introducción.');
+  }
+  setLoadingIntro(false);
+};
+
+  const handleSeccion = async (nivelIndex: number, seccionIndex: number) => {
+  setCurrentNivelIndex(nivelIndex);
+  setCurrentSeccionIndex(seccionIndex);
+  await fetchIntroduccion(niveles[nivelIndex].id);
+  setModalIntroduccionVisible(true); 
+};
+
+const continuarAPreguntas = async () => {
+  setModalIntroduccionVisible(false);
+  if (currentNivelIndex !== null && currentSeccionIndex !== null) {
+    await openPreguntasModal(currentNivelIndex, currentSeccionIndex);
+  }
+};
 
   const getProgreso = (nivel: typeof niveles[number]) => {
     const completadas = nivel.secciones.filter(s => s.completado).length;
@@ -320,6 +347,39 @@ export default function Niveles() {
           </View>
         </View>
       </Modal>
+
+      <Modal
+      visible={modalIntroduccionVisible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={() => setModalIntroduccionVisible(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <TouchableOpacity
+            style={styles.modalCloseBtn}
+            onPress={() => setModalIntroduccionVisible(false)}
+          >
+            <Text style={styles.modalCloseText}>✕</Text>
+          </TouchableOpacity>
+          <Text style={styles.modalTitle}>Introducción</Text>
+          {loadingIntro ? (
+            <ActivityIndicator size="large" color="#1572b6" />
+          ) : (
+            <ScrollView style={{ maxHeight: 250 }}>
+              <Text style={{ fontSize: 16, color: '#222', marginBottom: 20 }}>{introduccion}</Text>
+            </ScrollView>
+          )}
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={continuarAPreguntas}
+            disabled={loadingIntro}
+          >
+            <Text style={styles.closeButtonText}>Continuar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
 
       {/* Modal preguntas */}
       <Modal
