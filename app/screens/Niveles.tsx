@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { WebView } from 'react-native-webview';
 import {
   ActivityIndicator,
   Dimensions,
@@ -10,7 +9,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 
@@ -22,8 +21,6 @@ const { width } = Dimensions.get('window');
 const SECCIONES_POR_NIVEL = 5;
 const VIDAS_INICIALES = 5;
 const TIEMPO_ESPERA = 60;
-
-const API_BASE_URL = 'http://192.168.0.101:5000';  // tu IP real y puerto
 
 type Question = {
   _id: string;
@@ -47,9 +44,6 @@ export default function Niveles() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [selectedAnswers, setSelectedAnswers] = useState<{ [key: string]: string }>({});
-
-  const [videoVisto, setVideoVisto] = useState(false);
-
 
   const [niveles, setNiveles] = useState(() =>
     [
@@ -91,7 +85,7 @@ export default function Niveles() {
     setLoadingQuestions(true);
     try {
       // Cambia la URL para que sea tu API real, filtrando por nivel y sección si lo tienes
-      const response = await fetch(`${API_BASE_URL}/api/questions/${getNivelKey(nivelId)}?level=${seccionId}&limit=5`);
+      const response = await fetch(`http://localhost:5000/api/questions/${getNivelKey(nivelId)}?level=${seccionId}&limit=5`);
       const json = await response.json();
       if (json.success && json.data && Array.isArray(json.data)) {
         setQuestions(json.data);
@@ -110,7 +104,7 @@ export default function Niveles() {
     setLoadingQuestions(true);
     try {
       // API que trae preguntas combinadas para desafío final
-      const response = await fetch(`${API_BASE_URL}/api/questions/desafio-final?limit=10`);
+      const response = await  fetch(`http://localhost:5000/api/questions/desafio-final?limit=10`);
       const json = await response.json();
       if (json.success && json.data && Array.isArray(json.data)) {
         setQuestions(json.data);
@@ -148,9 +142,9 @@ export default function Niveles() {
     switch (nivelId) {
       case 1: return 'html5';
       case 2: return 'css';
-      case 3: return 'javascript';
-      case 4: return 'react';
-      default: return 'javascript';
+      case 3: return 'Javascript';
+      case 4: return 'React';
+      default: return 'Javascript';
     }
   };
 
@@ -201,11 +195,45 @@ export default function Niveles() {
     setSelectedAnswers({});
   };
 
-  const handleSeccion = (nivelIndex: number, seccionIndex: number) => {
-    // Abrir modal preguntas para cualquier sección
-    setVideoVisto(false);
-    openPreguntasModal(nivelIndex, seccionIndex);
+  const [modalIntroduccionVisible, setModalIntroduccionVisible] = useState(false);
+const [introduccion, setIntroduccion] = useState('');
+const [codeExample, setCodeExample] = useState(''); // Nuevo estado para el código
+const [loadingIntro, setLoadingIntro] = useState(false);
+const fetchIntroduccion = async (nivelId: number) => {
+    setLoadingIntro(true);
+    setIntroduccion('');
+    setCodeExample(''); // Reiniciar el código
+    try {
+      let key = getNivelKey(nivelId).toLowerCase();
+      const response = await fetch(`http://localhost:5000/api/introductions/${key}`);
+      const json = await response.json();
+      if (json.data) {
+        setIntroduccion(json.data.description || 'No hay introducción disponible.');
+        setCodeExample(json.data.codeExample || 'No hay ejemplo de código disponible.'); // Asignar el código
+      } else {
+        setIntroduccion('No hay introducción disponible.');
+        setCodeExample('No hay ejemplo de código disponible.');
+      }
+    } catch (e) {
+      setIntroduccion('Error al cargar la introducción.');
+      setCodeExample('Error al cargar el ejemplo de código.');
+    }
+    setLoadingIntro(false);
   };
+
+  const handleSeccion = async (nivelIndex: number, seccionIndex: number) => {
+  setCurrentNivelIndex(nivelIndex);
+  setCurrentSeccionIndex(seccionIndex);
+  await fetchIntroduccion(niveles[nivelIndex].id);
+  setModalIntroduccionVisible(true); 
+};
+
+const continuarAPreguntas = async () => {
+  setModalIntroduccionVisible(false);
+  if (currentNivelIndex !== null && currentSeccionIndex !== null) {
+    await openPreguntasModal(currentNivelIndex, currentSeccionIndex);
+  }
+};
 
   const getProgreso = (nivel: typeof niveles[number]) => {
     const completadas = nivel.secciones.filter(s => s.completado).length;
@@ -249,15 +277,13 @@ export default function Niveles() {
     </View>
   );
 
-const nivelActual = nivelAbiertoIndex !== null ? getNivelKey(niveles[nivelAbiertoIndex].id) : null;
-
   return (
     <View style={styles.container}>
       <View style={styles.statusBar} />
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <View style={styles.heartContainer}>
-            <Text style={styles.heart}>❤️</Text>
+            <Text style={styles.heart}>❤</Text>
             <Text style={styles.levelNumber}>{vidas}</Text>
           </View>
 
@@ -330,92 +356,79 @@ const nivelActual = nivelAbiertoIndex !== null ? getNivelKey(niveles[nivelAbiert
         </View>
       </Modal>
 
+{/* Modal de Introducción (mejorado con código dinámico) */}
+      <Modal
+        visible={modalIntroduccionVisible}
+        animationType="fade" // Un fade es más suave para intro
+        transparent={true}
+        onRequestClose={() => setModalIntroduccionVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.introModalContent}>
+            <TouchableOpacity
+              style={styles.modalCloseBtn}
+              onPress={() => setModalIntroduccionVisible(false)}
+            >
+              <Text style={styles.modalCloseText}>✕</Text>
+            </TouchableOpacity>
+
+            <View style={styles.introIconContainer}>
+              <Text style={styles.introIcon}>💡</Text>
+            </View>
+
+            <Text style={styles.introTitle}>
+              ¡Prepárate para la sección!
+            </Text>
+
+            {loadingIntro ? (
+              <ActivityIndicator size="large" color="#1572b6" style={styles.introLoading} />
+            ) : (
+              <ScrollView style={styles.introScroll}>
+                <Text style={styles.introText}>{introduccion}</Text>
+                {/* Nuevo: Cuadro con ejemplo de código dinámico */}
+                <View style={styles.codeExampleContainer}>
+                  <Text style={styles.codeExampleTitle}>Ejemplo de Código:</Text>
+                  <Text style={styles.codeExampleText}>
+                    {codeExample || "Cargando ejemplo de código..."}
+                  </Text>
+                </View>
+              </ScrollView>
+            )}
+
+            <TouchableOpacity
+              style={styles.introContinueButton}
+              onPress={continuarAPreguntas}
+              disabled={loadingIntro}
+            >
+              <Text style={styles.introContinueButtonText}>Continuar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* Modal preguntas */}
       <Modal
         visible={modalPreguntasVisible}
         animationType="slide"
+        transparent={true}  // <-- importante para fondo transparente
         onRequestClose={() => setModalPreguntasVisible(false)}
-        >
-        <View style={styles.modalContent}>
-          <TouchableOpacity
-            style={styles.modalCloseBtn}
-            onPress={closePreguntasModal}
-          >
-            <Text style={styles.modalCloseText}>✕</Text>
-          </TouchableOpacity>
+      >
+        <View style={styles.modalOverlay}>  {/* Fondo oscuro y centrado */}
+          <View style={styles.modalContent}> {/* Contenido blanco centrado */}
+            <TouchableOpacity
+              style={styles.modalCloseBtn}
+              onPress={closePreguntasModal}
+            >
+              <Text style={styles.modalCloseText}>✕</Text>
+            </TouchableOpacity>
 
-          <Text style={styles.modalTitle}>
-            {currentSeccionIndex === SECCIONES_POR_NIVEL - 1 ? 'Desafío Final' : `Preguntas ${niveles[currentNivelIndex ?? 0]?.name} Sección ${currentSeccionIndex !== null ? currentSeccionIndex + 1 : ''}`}
-          </Text>
+            <Text style={styles.modalTitle}>
+              {currentSeccionIndex === SECCIONES_POR_NIVEL - 1
+                ? 'Desafío Final'
+                : `Preguntas ${niveles[currentNivelIndex ?? 0]?.name} Sección ${currentSeccionIndex !== null ? currentSeccionIndex + 1 : ''}`}
+            </Text>
 
-          {
-            nivelActual && currentSeccionIndex === 0 && !videoVisto ? (
-              nivelActual === 'html5' ? (
-                <>
-                  <Text style={styles.videoTitle}>🎥 Introducción a HTML5</Text>
-                  <View style={styles.videoContainer}>
-                    <WebView
-                      source={{ uri: 'https://youtu.be/UfRt3lQM9_Q?si=sFyDSsW6teKoagr0' }}
-                      style={styles.webview}
-                    />
-                  </View>
-                  <TouchableOpacity
-                    style={styles.button}
-                    onPress={() => setVideoVisto(true)}
-                  >
-                    <Text style={styles.buttonText}>Iniciar preguntas</Text>
-                  </TouchableOpacity>
-                </>
-              ) : nivelActual === 'css' ? (
-                <>
-                  <Text style={styles.videoTitle}>🎥 Introducción a CSS</Text>
-                  <View style={styles.videoContainer}>
-                    <WebView
-                      source={{ uri: 'https://youtu.be/1PnVor36_40' }}
-                      style={styles.webview}
-                    />
-                  </View>
-                  <TouchableOpacity
-                    style={styles.button}
-                    onPress={() => setVideoVisto(true)}
-                  >
-                    <Text style={styles.buttonText}>Iniciar preguntas</Text>
-                  </TouchableOpacity>
-                </>
-              ) : nivelActual === 'javascript' ? (
-                <>
-                  <Text style={styles.videoTitle}>🎥 Introducción a JavaScript</Text>
-                  <View style={styles.videoContainer}>
-                    <WebView
-                      source={{ uri: 'https://youtu.be/hdI2bqOjy3c' }}
-                      style={styles.webview}
-                    />
-                  </View>
-                  <TouchableOpacity
-                    style={styles.button}
-                    onPress={() => setVideoVisto(true)}
-                  >
-                    <Text style={styles.buttonText}>Iniciar preguntas</Text>
-                  </TouchableOpacity>
-                </>
-              ) : nivelActual === 'react' ? (
-                <>
-                  <Text style={styles.videoTitle}>🎥 Introducción a React</Text>
-                  <View style={styles.videoContainer}>
-                    <WebView
-                      source={{ uri: 'https://youtu.be/bMknfKXIFA8' }}
-                      style={styles.webview}
-                    />
-                  </View>
-                  <TouchableOpacity
-                    style={styles.button}
-                    onPress={() => setVideoVisto(true)}
-                  >
-                    <Text style={styles.buttonText}>Iniciar preguntas</Text>
-                  </TouchableOpacity>
-                </>
-              ) : null
-            ) : loadingQuestions ? (
+            {loadingQuestions ? (
               <ActivityIndicator size="large" color="#1572b6" />
             ) : questions.length === 0 ? (
               <Text style={styles.noQuestionsText}>No hay preguntas disponibles.</Text>
@@ -426,17 +439,18 @@ const nivelActual = nivelAbiertoIndex !== null ? getNivelKey(niveles[nivelAbiert
                 renderItem={renderQuestion}
                 extraData={selectedAnswers}
               />
-            )
-          }
+            )}
 
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={closePreguntasModal}
-          >
-            <Text style={styles.closeButtonText}>Enviar respuestas</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={closePreguntasModal}
+            >
+              <Text style={styles.closeButtonText}>Enviar respuestas</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
+
 
       {/* Modal confirmar cerrar sesión */}
       <Modal
@@ -481,7 +495,7 @@ const ProgressCircle = ({ percentage, color, label }: { percentage: number; colo
   return (
     <View>
       <Svg width={size} height={size}>
-        <G transform={`translate(${size / 2}, ${size / 2})`}>
+      <G transform={`translate(${size / 2}, ${size / 2})`}>
           <Circle cx={0} cy={0} r={radius} stroke="#E0E0E0" strokeWidth="8" fill="none" />
           <Circle
             cx={0}
@@ -539,6 +553,102 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+// --- Estilos para el nuevo modal de introducción (mejorado) ---
+  introModalContent: {
+    backgroundColor: '#F0F8FF', // Fondo más claro para destacar
+    borderRadius: 24,
+    width: '95%', // Aumentado el ancho
+    maxHeight: '90%', // Aumentada la altura
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#1E90FF',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.4,
+    shadowRadius: 15,
+    elevation: 15,
+  },
+  introIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#1E90FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 6,
+  },
+  introIcon: {
+    fontSize: 48,
+    color: '#fff',
+  },
+  introTitle: {
+    fontSize: 24,
+    fontWeight: '900',
+    textAlign: 'center',
+    color: '#1572b6',
+    marginBottom: 12,
+  },
+  introScroll: {
+    maxHeight: 250,
+  },
+  introText: {
+    fontSize: 16,
+    color: '#222',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  introLoading: {
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  introContinueButton: {
+    backgroundColor: '#1E90FF',
+    padding: 16,
+    borderRadius: 12,
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 24,
+    shadowColor: '#1E90FF',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  introContinueButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+  // --- Nuevos estilos para el cuadro de código ---
+  codeExampleContainer: {
+    backgroundColor: '#2d2d2d',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 20,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  codeExampleTitle: {
+    color: '#ccc',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  codeExampleText: {
+    color: '#f8f8f2',
+    fontSize: 12,
+    fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
+    lineHeight: 18,
+  },
+  // --- Fin de nuevos estilos ---,
   heart: {
     fontSize: 36,
     marginRight: 8,
@@ -662,10 +772,9 @@ const styles = StyleSheet.create({
 
   modalOverlay: {
     flex: 1,
-
-    backgroundColor: 'rgba(0,0,0,0.85)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',  // Fondo oscuro semitransparente
+    justifyContent: 'center',             // Centrado vertical
+    alignItems: 'center',                 // Centrado horizontal
     padding: 20,
   },
   modalContent: {
@@ -683,6 +792,7 @@ const styles = StyleSheet.create({
     shadowRadius: 15,
     elevation: 15,
   },
+
   modalCloseBtn: {
     position: 'absolute',
     top: 16,
@@ -809,34 +919,6 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     color: '#fff',
     fontWeight: '700',
-    fontSize: 16,
-  },
-
-  videoTitle: {
-  fontSize: 20,
-  fontWeight: 'bold',
-  marginBottom: 10,
-  textAlign: 'center',
-  color: '#0083ff',
+    fontSize: 16,
 },
-videoContainer: {
-  width: '100%',
-  height: 220,
-  marginBottom: 20,
-},
-webview: {
-  flex: 1,
-},
-button: {
-  backgroundColor: '#0083ff',
-  padding: 10,
-  borderRadius: 10,
-  marginBottom: 20,
-},
-buttonText: {
-  color: 'white',
-  textAlign: 'center',
-  fontWeight: 'bold',
-},
-
 });

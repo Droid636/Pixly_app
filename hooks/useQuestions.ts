@@ -9,7 +9,7 @@ export function useQuestions() {
     fetch('http://192.168.0.101:5000/api/questions')
       .then(res => res.json())
       .then(data => {
-        setQuestions(data.data); // Accede a la propiedad 'data' de la respuesta
+        setQuestions(data.data); // Accede a la propiedad 'data' de la respuesta //xdd
         setLoading(false);
       })
       .catch((err) => {
