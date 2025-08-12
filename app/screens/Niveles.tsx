@@ -20,7 +20,14 @@ const { width } = Dimensions.get('window');
 
 const SECCIONES_POR_NIVEL = 5;
 const VIDAS_INICIALES = 5;
-const TIEMPO_ESPERA = 60;
+const TIEMPO_ESPERA = 300;
+
+const formatTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
 
 type Question = {
   _id: string;
@@ -40,6 +47,7 @@ export default function Niveles() {
   const [nivelAbiertoIndex, setNivelAbiertoIndex] = useState<number | null>(null);
   const [modalCerrarSesionVisible, setModalCerrarSesionVisible] = useState(false);
 
+  const [modalTimerVisible, setModalTimerVisible] = useState(false);
   const [modalPreguntasVisible, setModalPreguntasVisible] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
@@ -80,6 +88,8 @@ export default function Niveles() {
     return () => clearInterval(intervalo);
   }, [bloqueado, timer]);
 
+
+
   // Función para cargar preguntas para secciones normales (no desafío final)
   const fetchQuestions = async (nivelId: number, seccionId: number) => {
     setLoadingQuestions(true);
@@ -104,7 +114,7 @@ export default function Niveles() {
     setLoadingQuestions(true);
     try {
       // API que trae preguntas combinadas para desafío final
-      const response = await  fetch(`http://localhost:5000/api/questions/desafio-final?limit=10`);
+      const response = await fetch(`http://localhost:5000/api/questions/desafio-final?limit=10`);
       const json = await response.json();
       if (json.success && json.data && Array.isArray(json.data)) {
         setQuestions(json.data);
@@ -152,59 +162,59 @@ export default function Niveles() {
     setSelectedAnswers((prev) => ({ ...prev, [questionId]: option }));
   };
 
- // Función que cierra modal sin afectar vidas ni lógica
-const cerrarModalSinEvaluar = () => {
-  setModalPreguntasVisible(false);
-  setSelectedAnswers({});
-};
-
-// Función que evalúa respuestas y cierra modal (botón enviar)
-const closePreguntasModal = () => {
-  if (questions.length === 0) {
+  // Función que cierra modal sin afectar vidas ni lógica
+  const cerrarModalSinEvaluar = () => {
     setModalPreguntasVisible(false);
-    return;
-  }
-  let todasCorrectas = true;
-  questions.forEach(q => {
-    if (selectedAnswers[q._id] !== q.answer) {
-      todasCorrectas = false;
+    setSelectedAnswers({});
+  };
+
+  // Función que evalúa respuestas y cierra modal (botón enviar)
+  const closePreguntasModal = () => {
+    if (questions.length === 0) {
+      setModalPreguntasVisible(false);
+      return;
     }
-  });
-
-  if (todasCorrectas) {
-    alert('✅ ¡Correcto! Sección completada');
-    if (currentNivelIndex !== null && currentSeccionIndex !== null) {
-      const nuevos = [...niveles];
-      nuevos[currentNivelIndex].secciones[currentSeccionIndex].completado = true;
-
-      if (currentSeccionIndex + 1 < SECCIONES_POR_NIVEL) {
-        nuevos[currentNivelIndex].secciones[currentSeccionIndex + 1].bloqueado = false;
-      } else if (currentNivelIndex + 1 < niveles.length) {
-        nuevos[currentNivelIndex + 1].secciones[0].bloqueado = false;
+    let todasCorrectas = true;
+    questions.forEach(q => {
+      if (selectedAnswers[q._id] !== q.answer) {
+        todasCorrectas = false;
       }
+    });
 
-      setNiveles(nuevos);
-    }
-  } else {
-    const nuevasVidas = vidas - 1;
-    setVidas(nuevasVidas);
-    if (nuevasVidas <= 0) {
-      setBloqueado(true);
-      setTimer(TIEMPO_ESPERA);
-    }
-    alert('❌ Fallaste. Has perdido una vida.');
-  }
+    if (todasCorrectas) {
+      alert('✅ ¡Correcto! Sección completada');
+      if (currentNivelIndex !== null && currentSeccionIndex !== null) {
+        const nuevos = [...niveles];
+        nuevos[currentNivelIndex].secciones[currentSeccionIndex].completado = true;
 
-  setModalPreguntasVisible(false);
-  setSelectedAnswers({});
-};
+        if (currentSeccionIndex + 1 < SECCIONES_POR_NIVEL) {
+          nuevos[currentNivelIndex].secciones[currentSeccionIndex + 1].bloqueado = false;
+        } else if (currentNivelIndex + 1 < niveles.length) {
+          nuevos[currentNivelIndex + 1].secciones[0].bloqueado = false;
+        }
+
+        setNiveles(nuevos);
+      }
+    } else {
+      const nuevasVidas = vidas - 1;
+      setVidas(nuevasVidas);
+      if (nuevasVidas <= 0) {
+        setBloqueado(true);
+        setTimer(TIEMPO_ESPERA);
+      }
+      alert('❌ Fallaste. Has perdido una vida.');
+    }
+
+    setModalPreguntasVisible(false);
+    setSelectedAnswers({});
+  };
 
 
   const [modalIntroduccionVisible, setModalIntroduccionVisible] = useState(false);
-const [introduccion, setIntroduccion] = useState('');
-const [codeExample, setCodeExample] = useState(''); // Nuevo estado para el código
-const [loadingIntro, setLoadingIntro] = useState(false);
-const fetchIntroduccion = async (nivelId: number) => {
+  const [introduccion, setIntroduccion] = useState('');
+  const [codeExample, setCodeExample] = useState(''); // Nuevo estado para el código
+  const [loadingIntro, setLoadingIntro] = useState(false);
+  const fetchIntroduccion = async (nivelId: number) => {
     setLoadingIntro(true);
     setIntroduccion('');
     setCodeExample(''); // Reiniciar el código
@@ -227,18 +237,18 @@ const fetchIntroduccion = async (nivelId: number) => {
   };
 
   const handleSeccion = async (nivelIndex: number, seccionIndex: number) => {
-  setCurrentNivelIndex(nivelIndex);
-  setCurrentSeccionIndex(seccionIndex);
-  await fetchIntroduccion(niveles[nivelIndex].id);
-  setModalIntroduccionVisible(true); 
-};
+    setCurrentNivelIndex(nivelIndex);
+    setCurrentSeccionIndex(seccionIndex);
+    await fetchIntroduccion(niveles[nivelIndex].id);
+    setModalIntroduccionVisible(true);
+  };
 
-const continuarAPreguntas = async () => {
-  setModalIntroduccionVisible(false);
-  if (currentNivelIndex !== null && currentSeccionIndex !== null) {
-    await openPreguntasModal(currentNivelIndex, currentSeccionIndex);
-  }
-};
+  const continuarAPreguntas = async () => {
+    setModalIntroduccionVisible(false);
+    if (currentNivelIndex !== null && currentSeccionIndex !== null) {
+      await openPreguntasModal(currentNivelIndex, currentSeccionIndex);
+    }
+  };
 
   const getProgreso = (nivel: typeof niveles[number]) => {
     const completadas = nivel.secciones.filter(s => s.completado).length;
@@ -287,10 +297,16 @@ const continuarAPreguntas = async () => {
       <View style={styles.statusBar} />
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <View style={styles.heartContainer}>
+
+          <TouchableOpacity
+            style={styles.heartContainer}
+            onPress={() => setModalTimerVisible(true)} // Abre el modal
+            activeOpacity={0.7}
+          >
             <Text style={styles.heart}>❤</Text>
             <Text style={styles.levelNumber}>{vidas}</Text>
-          </View>
+          </TouchableOpacity>
+
 
           <TouchableOpacity
             style={styles.logoutBtn}
@@ -324,6 +340,9 @@ const continuarAPreguntas = async () => {
           <Text style={styles.timer}>⌛ Espera {timer}s para recuperar vidas</Text>
         )}
       </ScrollView>
+
+
+
 
       <Modal
         visible={nivelAbiertoIndex !== null}
@@ -361,7 +380,7 @@ const continuarAPreguntas = async () => {
         </View>
       </Modal>
 
-{/* Modal de Introducción (mejorado con código dinámico) */}
+      {/* Modal de Introducción (mejorado con código dinámico) */}
       <Modal
         visible={modalIntroduccionVisible}
         animationType="fade" // Un fade es más suave para intro
@@ -411,54 +430,77 @@ const continuarAPreguntas = async () => {
         </View>
       </Modal>
 
-     
+      {/* Modal que muestra el temporizador cuando se agotan las vidas */}
+      <Modal
+        visible={modalTimerVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setModalTimerVisible(false)}
+      >
+        <View style={styles.timerModalOverlay}>
+          <View style={styles.timerModalContent}>
+            <Text style={styles.timerTitle}>⌛ Espera para recuperar vidas</Text>
+            <Text style={styles.timerLarge}>{formatTime(timer)}</Text>
+
+            <TouchableOpacity
+              style={styles.timerCloseButton}
+              onPress={() => setModalTimerVisible(false)}
+            >
+              <Text style={styles.timerCloseButtonText}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+
+
       {/* Modal preguntas */}
-<Modal
-  visible={modalPreguntasVisible}
-  animationType="slide"
-  transparent={true}
-  onRequestClose={() => setModalPreguntasVisible(false)}
->
-  <View style={styles.modalOverlay}>
-    <View style={styles.modalContent}>
-      
-      {/* Cambiar aquí la función */}
-      <TouchableOpacity
-        style={styles.modalCloseBtn}
-        onPress={cerrarModalSinEvaluar}  
+      <Modal
+        visible={modalPreguntasVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalPreguntasVisible(false)}
       >
-        <Text style={styles.modalCloseText}>✕</Text>
-      </TouchableOpacity>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
 
-      <Text style={styles.modalTitle}>
-        {currentSeccionIndex === SECCIONES_POR_NIVEL - 1
-          ? 'Desafío Final'
-          : `Preguntas ${niveles[currentNivelIndex ?? 0]?.name} Sección ${currentSeccionIndex !== null ? currentSeccionIndex + 1 : ''}`}
-      </Text>
+            {/* Cambiar aquí la función */}
+            <TouchableOpacity
+              style={styles.modalCloseBtn}
+              onPress={cerrarModalSinEvaluar}
+            >
+              <Text style={styles.modalCloseText}>✕</Text>
+            </TouchableOpacity>
 
-      {loadingQuestions ? (
-        <ActivityIndicator size="large" color="#1572b6" />
-      ) : questions.length === 0 ? (
-        <Text style={styles.noQuestionsText}>No hay preguntas disponibles.</Text>
-      ) : (
-        <FlatList
-          data={questions}
-          keyExtractor={(item) => item._id}
-          renderItem={renderQuestion}
-          extraData={selectedAnswers}
-        />
-      )}
+            <Text style={styles.modalTitle}>
+              {currentSeccionIndex === SECCIONES_POR_NIVEL - 1
+                ? 'Desafío Final'
+                : `Preguntas ${niveles[currentNivelIndex ?? 0]?.name} Sección ${currentSeccionIndex !== null ? currentSeccionIndex + 1 : ''}`}
+            </Text>
 
-      <TouchableOpacity
-        style={styles.closeButton}
-        onPress={closePreguntasModal}  
-      >
-        <Text style={styles.closeButtonText}>Enviar respuestas</Text>
-      </TouchableOpacity>
+            {loadingQuestions ? (
+              <ActivityIndicator size="large" color="#1572b6" />
+            ) : questions.length === 0 ? (
+              <Text style={styles.noQuestionsText}>No hay preguntas disponibles.</Text>
+            ) : (
+              <FlatList
+                data={questions}
+                keyExtractor={(item) => item._id}
+                renderItem={renderQuestion}
+                extraData={selectedAnswers}
+              />
+            )}
 
-    </View>
-  </View>
-</Modal>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={closePreguntasModal}
+            >
+              <Text style={styles.closeButtonText}>Enviar respuestas</Text>
+            </TouchableOpacity>
+
+          </View>
+        </View>
+      </Modal>
 
 
 
@@ -505,7 +547,7 @@ const ProgressCircle = ({ percentage, color, label }: { percentage: number; colo
   return (
     <View>
       <Svg width={size} height={size}>
-      <G transform={`translate(${size / 2}, ${size / 2})`}>
+        <G transform={`translate(${size / 2}, ${size / 2})`}>
           <Circle cx={0} cy={0} r={radius} stroke="#E0E0E0" strokeWidth="8" fill="none" />
           <Circle
             cx={0}
@@ -563,7 +605,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-// --- Estilos para el nuevo modal de introducción (mejorado) ---
+  // --- Estilos para el nuevo modal de introducción (mejorado) ---
   introModalContent: {
     backgroundColor: '#F0F8FF', // Fondo más claro para destacar
     borderRadius: 24,
@@ -789,8 +831,8 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     justifyContent: 'center', // Centra verticalmente
-     alignItems: 'center',     // Centra horizontalmente
-    flex:1,
+    alignItems: 'center',     // Centra horizontalmente
+    flex: 1,
     backgroundColor: '#FFF',
     borderRadius: 24,
     width: '90%',
@@ -929,6 +971,53 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     color: '#fff',
     fontWeight: '700',
-    fontSize: 16,
-},
+    fontSize: 16,
+  },
+  timerModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  timerModalContent: {
+    backgroundColor: '#fff',
+    padding: 30,
+    borderRadius: 15,
+    width: '80%',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5, // para android
+  },
+
+  timerTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#333',
+  },
+
+  timerLarge: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: '#1572b6',
+    marginBottom: 25,
+  },
+
+  timerCloseButton: {
+    backgroundColor: '#1572b6',
+    paddingVertical: 10,
+    paddingHorizontal: 25,
+    borderRadius: 10,
+  },
+
+  timerCloseButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+
 });
