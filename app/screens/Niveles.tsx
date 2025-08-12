@@ -152,48 +152,53 @@ export default function Niveles() {
     setSelectedAnswers((prev) => ({ ...prev, [questionId]: option }));
   };
 
-  const closePreguntasModal = () => {
-    if (questions.length === 0) {
-      setModalPreguntasVisible(false);
-      return;
-    }
-    // Comprobar si todas las respuestas son correctas
-    let todasCorrectas = true;
-    questions.forEach(q => {
-      if (selectedAnswers[q._id] !== q.answer) {
-        todasCorrectas = false;
-      }
-    });
+ // Función que cierra modal sin afectar vidas ni lógica
+const cerrarModalSinEvaluar = () => {
+  setModalPreguntasVisible(false);
+  setSelectedAnswers({});
+};
 
-    if (todasCorrectas) {
-      alert('✅ ¡Correcto! Sección completada');
-      if (currentNivelIndex !== null && currentSeccionIndex !== null) {
-        const nuevos = [...niveles];
-        nuevos[currentNivelIndex].secciones[currentSeccionIndex].completado = true;
-
-        // Si no es desafío final, desbloquear la siguiente sección
-        if (currentSeccionIndex + 1 < SECCIONES_POR_NIVEL) {
-          nuevos[currentNivelIndex].secciones[currentSeccionIndex + 1].bloqueado = false;
-        } else if (currentNivelIndex + 1 < niveles.length) {
-          // desbloquear primer sección del siguiente nivel
-          nuevos[currentNivelIndex + 1].secciones[0].bloqueado = false;
-        }
-
-        setNiveles(nuevos);
-      }
-    } else {
-      const nuevasVidas = vidas - 1;
-      setVidas(nuevasVidas);
-      if (nuevasVidas <= 0) {
-        setBloqueado(true);
-        setTimer(TIEMPO_ESPERA);
-      }
-      alert('❌ Fallaste. Has perdido una vida.');
-    }
-
+// Función que evalúa respuestas y cierra modal (botón enviar)
+const closePreguntasModal = () => {
+  if (questions.length === 0) {
     setModalPreguntasVisible(false);
-    setSelectedAnswers({});
-  };
+    return;
+  }
+  let todasCorrectas = true;
+  questions.forEach(q => {
+    if (selectedAnswers[q._id] !== q.answer) {
+      todasCorrectas = false;
+    }
+  });
+
+  if (todasCorrectas) {
+    alert('✅ ¡Correcto! Sección completada');
+    if (currentNivelIndex !== null && currentSeccionIndex !== null) {
+      const nuevos = [...niveles];
+      nuevos[currentNivelIndex].secciones[currentSeccionIndex].completado = true;
+
+      if (currentSeccionIndex + 1 < SECCIONES_POR_NIVEL) {
+        nuevos[currentNivelIndex].secciones[currentSeccionIndex + 1].bloqueado = false;
+      } else if (currentNivelIndex + 1 < niveles.length) {
+        nuevos[currentNivelIndex + 1].secciones[0].bloqueado = false;
+      }
+
+      setNiveles(nuevos);
+    }
+  } else {
+    const nuevasVidas = vidas - 1;
+    setVidas(nuevasVidas);
+    if (nuevasVidas <= 0) {
+      setBloqueado(true);
+      setTimer(TIEMPO_ESPERA);
+    }
+    alert('❌ Fallaste. Has perdido una vida.');
+  }
+
+  setModalPreguntasVisible(false);
+  setSelectedAnswers({});
+};
+
 
   const [modalIntroduccionVisible, setModalIntroduccionVisible] = useState(false);
 const [introduccion, setIntroduccion] = useState('');
@@ -406,50 +411,55 @@ const continuarAPreguntas = async () => {
         </View>
       </Modal>
 
+     
       {/* Modal preguntas */}
-      <Modal
-        visible={modalPreguntasVisible}
-        animationType="slide"
-        transparent={true}  // <-- importante para fondo transparente
-        onRequestClose={() => setModalPreguntasVisible(false)}
+<Modal
+  visible={modalPreguntasVisible}
+  animationType="slide"
+  transparent={true}
+  onRequestClose={() => setModalPreguntasVisible(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalContent}>
+      
+      {/* Cambiar aquí la función */}
+      <TouchableOpacity
+        style={styles.modalCloseBtn}
+        onPress={cerrarModalSinEvaluar}  
       >
-        <View style={styles.modalOverlay}>  {/* Fondo oscuro y centrado */}
-          <View style={styles.modalContent}> {/* Contenido blanco centrado */}
-            <TouchableOpacity
-              style={styles.modalCloseBtn}
-              onPress={closePreguntasModal}
-            >
-              <Text style={styles.modalCloseText}>✕</Text>
-            </TouchableOpacity>
+        <Text style={styles.modalCloseText}>✕</Text>
+      </TouchableOpacity>
 
-            <Text style={styles.modalTitle}>
-              {currentSeccionIndex === SECCIONES_POR_NIVEL - 1
-                ? 'Desafío Final'
-                : `Preguntas ${niveles[currentNivelIndex ?? 0]?.name} Sección ${currentSeccionIndex !== null ? currentSeccionIndex + 1 : ''}`}
-            </Text>
+      <Text style={styles.modalTitle}>
+        {currentSeccionIndex === SECCIONES_POR_NIVEL - 1
+          ? 'Desafío Final'
+          : `Preguntas ${niveles[currentNivelIndex ?? 0]?.name} Sección ${currentSeccionIndex !== null ? currentSeccionIndex + 1 : ''}`}
+      </Text>
 
-            {loadingQuestions ? (
-              <ActivityIndicator size="large" color="#1572b6" />
-            ) : questions.length === 0 ? (
-              <Text style={styles.noQuestionsText}>No hay preguntas disponibles.</Text>
-            ) : (
-              <FlatList
-                data={questions}
-                keyExtractor={(item) => item._id}
-                renderItem={renderQuestion}
-                extraData={selectedAnswers}
-              />
-            )}
+      {loadingQuestions ? (
+        <ActivityIndicator size="large" color="#1572b6" />
+      ) : questions.length === 0 ? (
+        <Text style={styles.noQuestionsText}>No hay preguntas disponibles.</Text>
+      ) : (
+        <FlatList
+          data={questions}
+          keyExtractor={(item) => item._id}
+          renderItem={renderQuestion}
+          extraData={selectedAnswers}
+        />
+      )}
 
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={closePreguntasModal}
-            >
-              <Text style={styles.closeButtonText}>Enviar respuestas</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      <TouchableOpacity
+        style={styles.closeButton}
+        onPress={closePreguntasModal}  
+      >
+        <Text style={styles.closeButtonText}>Enviar respuestas</Text>
+      </TouchableOpacity>
+
+    </View>
+  </View>
+</Modal>
+
 
 
       {/* Modal confirmar cerrar sesión */}
