@@ -1,9 +1,9 @@
 import { createStackNavigator } from '@react-navigation/stack';
 import React from 'react';
+import Quiz from '../screens/Integradora/Resultado';
 import LoginScreen from '../screens/LoginScreen';
 import Niveles from '../screens/Niveles';
 import RegisterScreen from '../screens/RegisterScreen';
-import Quiz from '../screens/Rsultado';
 import SplashScreen from '../screens/SplashScreen';
 import StartScreen from '../screens/StartScreen';
 
