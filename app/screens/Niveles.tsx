@@ -16,6 +16,12 @@ import Svg, { Circle, G } from 'react-native-svg';
 import { useLogout } from '@/hooks/useLogout';
 import { useNavigation } from '@react-navigation/native';
 
+import DesafioFinalHTML from './Desafio/OrdenarEtiquetasDesafio';
+import DesafioFinalCSS from './Desafio/DesafioFinalCSS';
+import DesafioFinalJS from './Desafio/DesafioFinalJS';
+import { RouteProp, useRoute } from '@react-navigation/native';
+import { RootStackParamList } from '@/app/(tabs)';
+
 const { width } = Dimensions.get('window');
 
 const SECCIONES_POR_NIVEL = 5;
@@ -39,6 +45,9 @@ type Question = {
 
 export default function Niveles() {
   const navigation = useNavigation<any>();
+  const route = useRoute<RouteProp<RootStackParamList, 'Niveles'>>();
+
+
   const logout = useLogout();
 
   const [vidas, setVidas] = useState(VIDAS_INICIALES);
@@ -95,7 +104,7 @@ export default function Niveles() {
     setLoadingQuestions(true);
     try {
       // Cambia la URL para que sea tu API real, filtrando por nivel y sección si lo tienes
-      const response = await fetch(`http://localhost:5000/api/questions/${getNivelKey(nivelId)}?level=${seccionId}&limit=5`);
+      const response = await fetch(`http://192.168.0.100:5000/api/questions/${getNivelKey(nivelId)}?level=${seccionId}&limit=5`);
       const json = await response.json();
       if (json.success && json.data && Array.isArray(json.data)) {
         setQuestions(json.data);
@@ -114,7 +123,7 @@ export default function Niveles() {
     setLoadingQuestions(true);
     try {
       // API que trae preguntas combinadas para desafío final
-      const response = await fetch(`http://localhost:5000/api/questions/desafio-final?limit=10`);
+      const response = await fetch(`http://192.168.0.100:5000/api/questions/desafio-final?limit=10`);
       const json = await response.json();
       if (json.success && json.data && Array.isArray(json.data)) {
         setQuestions(json.data);
@@ -152,9 +161,9 @@ export default function Niveles() {
     switch (nivelId) {
       case 1: return 'html5';
       case 2: return 'css';
-      case 3: return 'Javascript';
+      case 3: return 'javascript';
       case 4: return 'React';
-      default: return 'Javascript';
+      default: return 'javascript';
     }
   };
 
@@ -220,7 +229,7 @@ export default function Niveles() {
     setCodeExample(''); // Reiniciar el código
     try {
       let key = getNivelKey(nivelId).toLowerCase();
-      const response = await fetch(`http://localhost:5000/api/introductions/${key}`);
+      const response = await fetch(`http://192.168.0.100:5000/api/introductions/${key}`);
       const json = await response.json();
       if (json.data) {
         setIntroduccion(json.data.description || 'No hay introducción disponible.');
@@ -236,12 +245,76 @@ export default function Niveles() {
     setLoadingIntro(false);
   };
 
-  const handleSeccion = async (nivelIndex: number, seccionIndex: number) => {
-    setCurrentNivelIndex(nivelIndex);
-    setCurrentSeccionIndex(seccionIndex);
+const handleSeccion = async (nivelIndex: number, seccionIndex: number) => {
+  setCurrentNivelIndex(nivelIndex);
+  setCurrentSeccionIndex(seccionIndex);
+
+  // Si es la última sección (desafío final)
+  if (seccionIndex === SECCIONES_POR_NIVEL - 1) {
+    
+    const nivelName = niveles[nivelIndex].name.toLowerCase();
+    console.log('handleSeccion llamado con:', { nivelIndex, seccionIndex, nivelName });
+
+    const onComplete = (resultado: boolean) => {
+    if (resultado) {
+      alert('✅ ¡Desafío final completado!');
+      const nuevos = niveles.map((nivel, i) => {
+        if (i !== nivelIndex) return nivel;
+        return {
+          ...nivel,
+          secciones: nivel.secciones.map((sec, j) => {
+            if (j !== seccionIndex) return sec;
+            return { ...sec, completado: true };
+          }),
+        };
+      });
+
+      // Desbloquear siguiente nivel o sección según corresponda
+      if (nivelIndex + 1 < niveles.length) {
+        nuevos[nivelIndex + 1] = {
+          ...nuevos[nivelIndex + 1],
+          secciones: nuevos[nivelIndex + 1].secciones.map((sec, j) => {
+            if (j !== 0) return sec;
+            return { ...sec, bloqueado: false };
+          }),
+        };
+      }
+
+      setNiveles(nuevos);
+
+      // Reset vidas y timer
+      setVidas(VIDAS_INICIALES);
+      setBloqueado(false);
+      setTimer(0);
+    } else {
+      alert('❌ Fallaste el desafío final.');
+      const nuevasVidas = vidas - 1;
+      setVidas(nuevasVidas);
+      if (nuevasVidas <= 0) {
+        setBloqueado(true);
+        setTimer(TIEMPO_ESPERA);
+      }
+    }
+  };
+    
+    if (nivelName === 'html5' || nivelName === 'html') {
+        navigation.navigate('DesafioFinalHTML', { nivel: nivelIndex, seccion: seccionIndex, onComplete });
+    } else if (nivelName === 'css') {
+      navigation.navigate('DesafioFinalCSS', { nivel: nivelIndex, seccion: seccionIndex, onComplete });
+    } else if (nivelName === 'javascript' || nivelName === 'js') {
+       navigation.navigate('DesafioFinalJS', { nivel: nivelIndex, seccion: seccionIndex, onComplete });
+    } else {
+      alert('Desafío final no disponible para este nivel');
+    }
+
+  } else {
+    // Para secciones normales, abrir modal introducción y luego preguntas
     await fetchIntroduccion(niveles[nivelIndex].id);
     setModalIntroduccionVisible(true);
-  };
+  }
+};
+
+
 
   const continuarAPreguntas = async () => {
     setModalIntroduccionVisible(false);
@@ -475,7 +548,7 @@ export default function Niveles() {
             <Text style={styles.modalTitle}>
               {currentSeccionIndex === SECCIONES_POR_NIVEL - 1
                 ? 'Desafío Final'
-                : `Preguntas ${niveles[currentNivelIndex ?? 0]?.name} Sección ${currentSeccionIndex !== null ? currentSeccionIndex + 1 : ''}`}
+                : `Preguntas ${niveles[currentNivelIndex ?? 0]?.name ?? ''} Sección ${currentSeccionIndex !== null ? currentSeccionIndex + 1 : ''}`}
             </Text>
 
             {loadingQuestions ? (

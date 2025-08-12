@@ -7,24 +7,39 @@ import RegisterScreen from '../screens/RegisterScreen';
 import SplashScreen from '../screens/SplashScreen';
 import StartScreen from '../screens/StartScreen';
 
+import DesafioFinalHTML from '../screens/Desafio/OrdenarEtiquetasDesafio'; // Ajusta la ruta según donde esté tu archivo
+import DesafioFinalCSS from '../screens/Desafio/DesafioFinalCSS';
+import DesafioFinalJS from '../screens/Desafio/DesafioFinalJS';
+
 //Pantallas Integradora
 import IntegradoraInfoScreen from '../screens/Integradora/IntegradoraInfoScreen';
 import IntegradoraPracticeScreen from '../screens/Integradora/IntegradoraPracticeScreen';
 import IntegradoraQuestions1Screen from '../screens/Integradora/IntegradoraQuestions1Screen';
 import IntegradoraQuestions2Screen from '../screens/Integradora/IntegradoraQuestions2Screen';
 
+
+
 export type RootStackParamList = {
   Splash: undefined;
   Start: undefined;
   Login: undefined;
   Register: undefined;
-  Niveles: undefined;
+   // Cambiar Niveles de undefined a estos params opcionales:
+  Niveles: {
+    resultadoDesafioFinal?: boolean; // poner opcional para no forzar siempre
+    nivelIndex?: number;
+    seccionIndex?: number;
+  };
   Quiz: { score?: number };
 
   IntegradoraInfo: undefined;
   IntegradoraQuestions1: undefined;
   IntegradoraPractice: undefined;
   IntegradoraQuestions2: undefined;
+
+  DesafioFinalHTML: { nivel?: number; onComplete?: (resultado: boolean) => void };
+  DesafioFinalCSS: { nivel?: number; onComplete?: (resultado: boolean) => void };
+  DesafioFinalJS: { nivel?: number; onComplete?: (resultado: boolean) => void };
 
   // Añadir sus pantallas
   // Ejemplo:
@@ -59,6 +74,11 @@ export default function TabsNavigator() {
         name="IntegradoraQuestions2"
         component={IntegradoraQuestions2Screen}
       />
+
+     <Stack.Screen name="DesafioFinalHTML" component={DesafioFinalHTML} />
+    <Stack.Screen name="DesafioFinalCSS" component={DesafioFinalCSS} />
+    <Stack.Screen name="DesafioFinalJS" component={DesafioFinalJS} />
+
     </Stack.Navigator>
   );
 }
